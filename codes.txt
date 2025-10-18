@@ -1,0 +1,2534 @@
+app/game/page.js"'use client';
+import { useGameStore } from '@/store/gameStore';
+import { useState } from 'react';
+import CharacterSheet from '@/components/game/CharacterSheet';
+import CultivationPanel from '@/components/game/CultivationPanel';
+import WorldMap from '@/components/game/WorldMap';
+import Inventory from '@/components/game/Inventory';
+import CombatSystem from '@/components/game/CombatSystem';
+import SectManagement from '@/components/game/SectManagement';
+import Relationships from '@/components/game/Relationships';
+import StoryQuests from '@/components/game/StoryQuests';
+import Shop from '@/components/game/Shop';
+
+export default function GamePage() {
+  const { player } = useGameStore();
+  const [activeGameTab, setActiveGameTab] = useState('cultivation');
+
+  const gameMenuItems = [
+    { id: 'cultivation', name: 'Cultivation', icon: '🧘', color: 'from-green-500 to-emerald-500' },
+    { id: 'world', name: 'World Map', icon: '🗺️', color: 'from-blue-500 to-cyan-500' },
+    { id: 'combat', name: 'Combat', icon: '⚔️', color: 'from-red-500 to-pink-500' },
+    { id: 'sects', name: 'Sect', icon: '🏯', color: 'from-orange-500 to-amber-500' },
+    { id: 'shop', name: 'Shop', icon: '🏪', color: 'from-yellow-500 to-orange-500' },
+    { id: 'quests', name: 'Quests', icon: '📜', color: 'from-purple-500 to-indigo-500' },
+    { id: 'inventory', name: 'Inventory', icon: '🎒', color: 'from-gray-500 to-blue-500' },
+  ];
+
+  const renderActiveTab = () => {
+    switch (activeGameTab) {
+      case 'cultivation':
+        return <CultivationPanel />;
+      case 'world':
+        return <WorldMap />;
+      case 'combat':
+        return <CombatSystem />;
+      case 'sects':
+        return <SectManagement />;
+      case 'shop':
+        return <Shop />;
+      case 'quests':
+        return <StoryQuests />;
+      case 'inventory':
+        return <Inventory />;
+      default:
+        return <CultivationPanel />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-gray-800 to-gray-900 shadow-2xl border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <span className="text-2xl">⚡</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Martial Peak Journey</h1>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="bg-black/30 px-2 py-1 rounded">{player.name}</span>
+                  <span className="bg-white/20 px-2 py-1 rounded backdrop-blur-sm">
+                    {player.sect} Sect
+                  </span>
+                  <span className="bg-green-500/20 px-2 py-1 rounded text-green-300">
+                    {player.cultivation.realm} Stage {player.cultivation.stage}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm">
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>❤️</span>
+                  <span>{player.health}/{player.maxHealth}</span>
+                </div>
+                <div className="w-20 bg-gray-700 rounded-full h-1">
+                  <div 
+                    className="bg-red-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>{Math.floor(player.cultivation.qi)}/{player.cultivation.maxQi}</span>
+                </div>
+                <div className="w-20 bg-gray-700 rounded-full h-1">
+                  <div 
+                    className="bg-green-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${(player.cultivation.qi / player.cultivation.maxQi) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>💰</span>
+                  <span>{player.gold}</span>
+                </div>
+                <div className="text-yellow-400 text-xs">Gold</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Game Navigation Menu */}
+      <nav className="bg-black/40 backdrop-blur-lg border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex overflow-x-auto py-2 gap-1 scrollbar-hide">
+            {gameMenuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveGameTab(item.id)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 flex-shrink-0 ${
+                  activeGameTab === item.id
+                    ? `bg-gradient-to-r ${item.color} text-white shadow-lg scale-105`
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20 hover:scale-105'
+                }`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Game Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Sidebar - Character & Inventory */}
+          <aside className="lg:col-span-1 space-y-6">
+            <CharacterSheet />
+            <Inventory />
+          </aside>
+          
+          {/* Main Game Area - Dynamic Content */}
+          <main className="lg:col-span-3">
+            {renderActiveTab()}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}",app/game/manual/page.js "'use client';
+import { useGameStore } from '@/store/gameStore';
+import { useState } from 'react';
+import CharacterSheet from '@/components/game/CharacterSheet';
+import CultivationPanel from '@/components/game/CultivationPanel';
+import WorldMap from '@/components/game/WorldMap';
+import Inventory from '@/components/game/Inventory';
+import CombatSystem from '@/components/game/CombatSystem';
+import SectManagement from '@/components/game/SectManagement';
+import Relationships from '@/components/game/Relationships';
+import StoryQuests from '@/components/game/StoryQuests';
+import Shop from '@/components/game/Shop';
+
+export default function GamePage() {
+  const { player } = useGameStore();
+  const [activeGameTab, setActiveGameTab] = useState('cultivation');
+
+  const gameMenuItems = [
+    { id: 'cultivation', name: 'Cultivation', icon: '🧘', color: 'from-green-500 to-emerald-500' },
+    { id: 'world', name: 'World Map', icon: '🗺️', color: 'from-blue-500 to-cyan-500' },
+    { id: 'combat', name: 'Combat', icon: '⚔️', color: 'from-red-500 to-pink-500' },
+    { id: 'sects', name: 'Sect', icon: '🏯', color: 'from-orange-500 to-amber-500' },
+    { id: 'shop', name: 'Shop', icon: '🏪', color: 'from-yellow-500 to-orange-500' },
+    { id: 'quests', name: 'Quests', icon: '📜', color: 'from-purple-500 to-indigo-500' },
+    { id: 'inventory', name: 'Inventory', icon: '🎒', color: 'from-gray-500 to-blue-500' },
+  ];
+
+  const renderActiveTab = () => {
+    switch (activeGameTab) {
+      case 'cultivation':
+        return <CultivationPanel />;
+      case 'world':
+        return <WorldMap />;
+      case 'combat':
+        return <CombatSystem />;
+      case 'sects':
+        return <SectManagement />;
+      case 'shop':
+        return <Shop />;
+      case 'quests':
+        return <StoryQuests />;
+      case 'inventory':
+        return <Inventory />;
+      default:
+        return <CultivationPanel />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-gray-800 to-gray-900 shadow-2xl border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <span className="text-2xl">⚡</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Martial Peak Journey</h1>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="bg-black/30 px-2 py-1 rounded">{player.name}</span>
+                  <span className="bg-white/20 px-2 py-1 rounded backdrop-blur-sm">
+                    {player.sect} Sect
+                  </span>
+                  <span className="bg-green-500/20 px-2 py-1 rounded text-green-300">
+                    {player.cultivation.realm} Stage {player.cultivation.stage}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm">
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>❤️</span>
+                  <span>{player.health}/{player.maxHealth}</span>
+                </div>
+                <div className="w-20 bg-gray-700 rounded-full h-1">
+                  <div 
+                    className="bg-red-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>{Math.floor(player.cultivation.qi)}/{player.cultivation.maxQi}</span>
+                </div>
+                <div className="w-20 bg-gray-700 rounded-full h-1">
+                  <div 
+                    className="bg-green-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${(player.cultivation.qi / player.cultivation.maxQi) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>💰</span>
+                  <span>{player.gold}</span>
+                </div>
+                <div className="text-yellow-400 text-xs">Gold</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Game Navigation Menu */}
+      <nav className="bg-black/40 backdrop-blur-lg border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex overflow-x-auto py-2 gap-1 scrollbar-hide">
+            {gameMenuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveGameTab(item.id)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 flex-shrink-0 ${
+                  activeGameTab === item.id
+                    ? `bg-gradient-to-r ${item.color} text-white shadow-lg scale-105`
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20 hover:scale-105'
+                }`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Game Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Sidebar - Character & Inventory */}
+          <aside className="lg:col-span-1 space-y-6">
+            <CharacterSheet />
+            <Inventory />
+          </aside>
+          
+          {/* Main Game Area - Dynamic Content */}
+          <main className="lg:col-span-3">
+            {renderActiveTab()}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}",app/page.js"'use client';
+import { useGameStore } from '@/store/gameStore';
+import { useState } from 'react';
+import CharacterSheet from '@/components/game/CharacterSheet';
+import CultivationPanel from '@/components/game/CultivationPanel';
+import WorldMap from '@/components/game/WorldMap';
+import Inventory from '@/components/game/Inventory';
+import CombatSystem from '@/components/game/CombatSystem';
+import SectManagement from '@/components/game/SectManagement';
+import Relationships from '@/components/game/Relationships';
+import StoryQuests from '@/components/game/StoryQuests';
+import Shop from '@/components/game/Shop';
+
+export default function GamePage() {
+  const { player } = useGameStore();
+  const [activeGameTab, setActiveGameTab] = useState('cultivation');
+
+  const gameMenuItems = [
+    { id: 'cultivation', name: 'Cultivation', icon: '🧘', color: 'from-green-500 to-emerald-500' },
+    { id: 'world', name: 'World Map', icon: '🗺️', color: 'from-blue-500 to-cyan-500' },
+    { id: 'combat', name: 'Combat', icon: '⚔️', color: 'from-red-500 to-pink-500' },
+    { id: 'sects', name: 'Sect', icon: '🏯', color: 'from-orange-500 to-amber-500' },
+    { id: 'shop', name: 'Shop', icon: '🏪', color: 'from-yellow-500 to-orange-500' },
+    { id: 'quests', name: 'Quests', icon: '📜', color: 'from-purple-500 to-indigo-500' },
+    { id: 'inventory', name: 'Inventory', icon: '🎒', color: 'from-gray-500 to-blue-500' },
+  ];
+
+  const renderActiveTab = () => {
+    switch (activeGameTab) {
+      case 'cultivation':
+        return <CultivationPanel />;
+      case 'world':
+        return <WorldMap />;
+      case 'combat':
+        return <CombatSystem />;
+      case 'sects':
+        return <SectManagement />;
+      case 'shop':
+        return <Shop />;
+      case 'quests':
+        return <StoryQuests />;
+      case 'inventory':
+        return <Inventory />;
+      default:
+        return <CultivationPanel />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-gray-800 to-gray-900 shadow-2xl border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <span className="text-2xl">⚡</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Martial Peak Journey</h1>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="bg-black/30 px-2 py-1 rounded">{player.name}</span>
+                  <span className="bg-white/20 px-2 py-1 rounded backdrop-blur-sm">
+                    {player.sect} Sect
+                  </span>
+                  <span className="bg-green-500/20 px-2 py-1 rounded text-green-300">
+                    {player.cultivation.realm} Stage {player.cultivation.stage}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm">
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>❤️</span>
+                  <span>{player.health}/{player.maxHealth}</span>
+                </div>
+                <div className="w-20 bg-gray-700 rounded-full h-1">
+                  <div 
+                    className="bg-red-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>{Math.floor(player.cultivation.qi)}/{player.cultivation.maxQi}</span>
+                </div>
+                <div className="w-20 bg-gray-700 rounded-full h-1">
+                  <div 
+                    className="bg-green-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${(player.cultivation.qi / player.cultivation.maxQi) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <span>💰</span>
+                  <span>{player.gold}</span>
+                </div>
+                <div className="text-yellow-400 text-xs">Gold</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Game Navigation Menu */}
+      <nav className="bg-black/40 backdrop-blur-lg border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex overflow-x-auto py-2 gap-1 scrollbar-hide">
+            {gameMenuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveGameTab(item.id)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 flex-shrink-0 ${
+                  activeGameTab === item.id
+                    ? `bg-gradient-to-r ${item.color} text-white shadow-lg scale-105`
+                    : 'bg-white/10 text-gray-300 hover:bg-white/20 hover:scale-105'
+                }`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Game Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Sidebar - Character & Inventory */}
+          <aside className="lg:col-span-1 space-y-6">
+            <CharacterSheet />
+            <Inventory />
+          </aside>
+          
+          {/* Main Game Area - Dynamic Content */}
+          <main className="lg:col-span-3">
+            {renderActiveTab()}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}",component/game/CharacterSheet.js"'use client';
+import { useEffect } from 'react';
+import { useGameStore } from '@/store/gameStore';
+import { CultivationEngine } from '@/lib/gameEngine/cultivation';
+
+export default function CharacterSheet() {
+  const { 
+    player, 
+    breakthrough, 
+    saveGame, 
+    isLoading, 
+    error,
+    clearError
+  } = useGameStore();
+  
+  const progress = CultivationEngine.getProgressPercentage(player.cultivation);
+  const canBreakthrough = CultivationEngine.canBreakthrough(player.cultivation);
+  const nextRealm = CultivationEngine.getNextRealmInfo(player.cultivation.realm);
+  const breakthroughCost = CultivationEngine.calculateBreakthroughCost(
+    player.cultivation.realm, 
+    player.cultivation.stage
+  );
+
+  // Clear errors after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        clearError();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
+
+  const getRealmGradient = () => {
+    const gradients = {
+      'Mortal': 'from-gray-500 to-gray-700',
+      'Qi Condensation': 'from-green-500 to-green-700',
+      'Foundation': 'from-blue-500 to-blue-700',
+      'Golden Core': 'from-yellow-500 to-yellow-700',
+      'Nascent Soul': 'from-purple-500 to-purple-700',
+      'Immortal Emperor': 'from-rose-500 to-violet-700'
+    };
+    return gradients[player.cultivation.realm] || 'from-gray-500 to-gray-700';
+  };
+
+  const getRealmIcon = () => {
+    const icons = {
+      'Mortal': '👤',
+      'Qi Condensation': '💨',
+      'Foundation': '🏔️',
+      'Golden Core': '☀️',
+      'Nascent Soul': '👁️',
+      'Immortal Emperor': '👑'
+    };
+    return icons[player.cultivation.realm] || '👤';
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 p-6 text-white">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+          Character Sheet
+        </h2>
+        <div className={`px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${getRealmGradient()}`}>
+          {getRealmIcon()} {player.cultivation.realm}
+        </div>
+      </div>
+      
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Character Info */}
+      <div className="bg-black/30 rounded-xl p-4 border border-white/10 mb-4">
+        <div className="text-center mb-3">
+          <h3 className="text-xl font-bold text-white">{player.name}</h3>
+          <p className="text-gray-400 text-sm">{player.sect} Sect</p>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div>
+            <div className="text-2xl">{getRealmIcon()}</div>
+            <div className="text-sm text-gray-400">Realm</div>
+            <div className="font-bold text-white">{player.cultivation.realm}</div>
+          </div>
+          <div>
+            <div className="text-2xl">🌀</div>
+            <div className="text-sm text-gray-400">Stage</div>
+            <div className="font-bold text-white">{player.cultivation.stage}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Health Bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-400">Health</span>
+          <span className="font-mono">{player.health}/{player.maxHealth}</span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-3">
+          <div 
+            className="bg-gradient-to-r from-red-500 to-pink-500 h-3 rounded-full transition-all duration-500 shadow-lg shadow-red-500/25"
+            style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Cultivation Progress */}
+      <div className="mb-6">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-400">Qi Accumulation</span>
+          <span className="font-mono text-green-400">
+            {Math.floor(player.cultivation.qi)} / {Math.floor(player.cultivation.maxQi)}
+          </span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-3 mb-1">
+          <div 
+            className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-500 shadow-lg shadow-green-500/25"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>Progress: {progress.toFixed(1)}%</span>
+          <span>Next: {Math.floor(breakthroughCost)} Qi</span>
+        </div>
+      </div>
+      
+      {/* Stats Grid */}
+      <div className="bg-black/30 rounded-xl p-4 border border-white/10 mb-4">
+        <h3 className="font-bold text-lg mb-3 text-center text-blue-300">Cultivation Stats</h3>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="flex justify-between items-center p-2 bg-white/5 rounded">
+            <span className="text-gray-400">Strength:</span>
+            <span className="font-bold text-red-400">{player.stats.strength}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 bg-white/5 rounded">
+            <span className="text-gray-400">Agility:</span>
+            <span className="font-bold text-green-400">{player.stats.agility}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 bg-white/5 rounded">
+            <span className="text-gray-400">Intelligence:</span>
+            <span className="font-bold text-blue-400">{player.stats.intelligence}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 bg-white/5 rounded">
+            <span className="text-gray-400">Vitality:</span>
+            <span className="font-bold text-purple-400">{player.stats.vitality}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Gold & Save */}
+      <div className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-xl p-4 border border-yellow-500/30 mb-4">
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-yellow-300 font-semibold">Spiritual Resources</span>
+          <span className="text-2xl font-bold text-yellow-400">{player.gold} 🪙</span>
+        </div>
+        <button
+          onClick={saveGame}
+          disabled={isLoading}
+          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+        >
+          {isLoading ? '🌀 Saving...' : '💾 Save Progress'}
+        </button>
+      </div>
+      
+      {/* Breakthrough Button */}
+      {canBreakthrough && (
+        <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30 mb-4">
+          <h3 className="font-bold text-lg mb-2 text-purple-300 text-center">
+            ⚡ Breakthrough Available!
+          </h3>
+          <p className="text-sm text-purple-200 text-center mb-3">
+            Ready to advance to {
+              player.cultivation.stage === CultivationEngine.REALMS[player.cultivation.realm].maxStage && nextRealm
+                ? `${nextRealm.name} Realm`
+                : `Stage ${player.cultivation.stage + 1}`
+            }
+          </p>
+          <button
+            onClick={breakthrough}
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            🌀 Breakthrough Now
+          </button>
+        </div>
+      )}
+      
+      {/* Next Realm Info */}
+      {nextRealm && (
+        <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-4 border border-blue-500/30">
+          <h3 className="font-bold text-lg mb-2 text-blue-300 text-center">
+            Next Realm: {nextRealm.name}
+          </h3>
+          <p className="text-sm text-blue-200 text-center mb-3">{nextRealm.description}</p>
+          <div className="grid grid-cols-2 gap-2 text-xs text-blue-300">
+            <div className="text-center">
+              <div>❤️ +{nextRealm.healthBonus} HP</div>
+            </div>
+            <div className="text-center">
+              <div>🧠 +{nextRealm.statBonus.intelligence} INT</div>
+            </div>
+            <div className="text-center">
+              <div>💪 +{nextRealm.statBonus.strength} STR</div>
+            </div>
+            <div className="text-center">
+              <div>🏃 +{nextRealm.statBonus.agility} AGI</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location Info */}
+      <div className="mt-4 pt-4 border-t border-white/10">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-400">📍 Current Location</span>
+          <span className="text-white font-semibold capitalize">{player.location.replace('-', ' ')}</span>
+        </div>
+      </div>
+    </div>
+  );
+}",component/game/CombatSystem.js"'use client';
+import { useState, useEffect } from 'react';
+import { useGameStore } from '@/store/gameStore';
+import { CombatEngine } from '@/lib/gameEngine/combat';
+
+export default function CombatSystem() {
+  const { player } = useGameStore();
+  const [enemy, setEnemy] = useState(null);
+  const [combatLog, setCombatLog] = useState([]);
+  const [inCombat, setInCombat] = useState(false);
+
+  const startCombat = () => {
+    const newEnemy = CombatEngine.generateEnemy(player.cultivation.stage);
+    setEnemy(newEnemy);
+    setInCombat(true);
+    setCombatLog([{ type: 'info', message: `A ${newEnemy.name} appears!` }]);
+  };
+
+  const playerAttack = () => {
+    if (!enemy || !inCombat) return;
+
+    const logEntries = CombatEngine.executeTurn(player, enemy, { type: 'attack' });
+    setCombatLog(prev => [...prev, ...logEntries]);
+
+    // Check if combat ended
+    if (player.health <= 0 || enemy.health <= 0) {
+      setInCombat(false);
+    }
+  };
+
+  const fleeCombat = () => {
+    setCombatLog(prev => [...prev, { type: 'info', message: 'You fled from combat!' }]);
+    setInCombat(false);
+    setEnemy(null);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h2 className="text-2xl font-bold text-cultivation-primary mb-4">
+        Combat Training
+      </h2>
+
+      {!inCombat ? (
+        <div className="text-center">
+          <button
+            onClick={startCombat}
+            className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
+          >
+            Start Combat Training
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Combatants */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-4 bg-green-50 rounded">
+              <h3 className="font-bold">{player.name}</h3>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full"
+                  style={{ width: `${(player.health / player.maxHealth) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-sm">{player.health}/{player.maxHealth} HP</p>
+            </div>
+            
+            <div className="text-center p-4 bg-red-50 rounded">
+              <h3 className="font-bold">{enemy?.name}</h3>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-red-500 h-2 rounded-full"
+                  style={{ width: `${(enemy?.health / enemy?.maxHealth) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-sm">{enemy?.health}/{enemy?.maxHealth} HP</p>
+            </div>
+          </div>
+
+          {/* Combat Log */}
+          <div className="h-32 overflow-y-auto border rounded p-2 bg-gray-50">
+            {combatLog.map((entry, index) => (
+              <p key={index} className={`text-sm ${
+                entry.type === 'player_attack' ? 'text-green-600' :
+                entry.type === 'enemy_attack' ? 'text-red-600' :
+                'text-gray-600'
+              }`}>
+                {entry.message}
+              </p>
+            ))}
+          </div>
+
+          {/* Combat Actions */}
+          <div className="flex gap-2">
+            <button
+              onClick={playerAttack}
+              className="flex-1 bg-cultivation-primary text-white py-2 rounded hover:bg-cultivation-secondary"
+            >
+              Attack
+            </button>
+            <button
+              onClick={fleeCombat}
+              className="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600"
+            >
+              Flee
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}",component/game/CultivationPanel.js"'use client';
+import { useState, useEffect } from 'react';
+import { useGameStore } from '@/store/gameStore';
+import { CultivationEngine } from '@/lib/gameEngine/cultivation';
+
+export default function CultivationPanel() {
+  const { player, cultivate, breakthrough } = useGameStore();
+  const [cultivationAmount, setCultivationAmount] = useState(10);
+  const [isCultivating, setIsCultivating] = useState(false);
+  const [cultivationProgress, setCultivationProgress] = useState(0);
+  const [autoBreakthrough, setAutoBreakthrough] = useState(true);
+  const [cultivationLog, setCultivationLog] = useState([]);
+
+  const cultivationSpeed = CultivationEngine.getCultivationSpeed(player);
+  const efficiency = CultivationEngine.getCultivationEfficiency(player);
+  const progress = CultivationEngine.getProgressPercentage(player.cultivation);
+  const canBreakthrough = CultivationEngine.canBreakthrough(player.cultivation);
+  const nextRealm = CultivationEngine.getNextRealmInfo(player.cultivation.realm);
+  const breakthroughCost = CultivationEngine.calculateBreakthroughCost(
+    player.cultivation.realm, 
+    player.cultivation.stage
+  );
+
+  const addToLog = (message) => {
+    setCultivationLog(prev => [
+      { message, timestamp: new Date().toLocaleTimeString(), id: Date.now() },
+      ...prev.slice(0, 9) // Keep last 10 messages
+    ]);
+  };
+
+  const handleCultivate = () => {
+    const speed = CultivationEngine.getCultivationSpeed(player);
+    const actualAmount = cultivationAmount * speed;
+    
+    cultivate(actualAmount);
+    addToLog(`🧘 Gained ${Math.floor(actualAmount)} Qi through cultivation`);
+    
+    // Check for automatic breakthrough
+    if (autoBreakthrough && canBreakthrough) {
+      handleBreakthrough();
+    }
+  };
+
+  const handleBreakthrough = () => {
+    if (canBreakthrough) {
+      breakthrough();
+      const nextStage = player.cultivation.stage + 1;
+      const isRealmChange = nextStage > CultivationEngine.REALMS[player.cultivation.realm].maxStage;
+      
+      if (isRealmChange && nextRealm) {
+        addToLog(`🌟 BREAKTHROUGH! Advanced to ${nextRealm.name} Realm!`);
+      } else {
+        addToLog(`⚡ BREAKTHROUGH! Advanced to Stage ${nextStage}`);
+      }
+    }
+  };
+
+  const startContinuousCultivation = () => {
+    if (isCultivating) {
+      setIsCultivating(false);
+      addToLog('⏹️ Stopped continuous cultivation');
+      return;
+    }
+
+    setIsCultivating(true);
+    addToLog('🌀 Started continuous cultivation');
+  };
+
+  // Continuous cultivation effect
+  useEffect(() => {
+    if (!isCultivating) return;
+
+    const interval = setInterval(() => {
+      handleCultivate();
+    }, 1000); // Cultivate every second
+
+    return () => clearInterval(interval);
+  }, [isCultivating, cultivationAmount, autoBreakthrough]);
+
+  // Progress animation effect
+  useEffect(() => {
+    if (isCultivating) {
+      const timer = setTimeout(() => {
+        setCultivationProgress(prev => (prev + 10) % 100);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isCultivating, cultivationProgress]);
+
+  const getRealmGradient = () => {
+    const gradients = {
+      'Mortal': 'from-gray-500 to-gray-700',
+      'Qi Condensation': 'from-green-500 to-green-700',
+      'Foundation': 'from-blue-500 to-blue-700',
+      'Golden Core': 'from-yellow-500 to-yellow-700',
+      'Nascent Soul': 'from-purple-500 to-purple-700'
+    };
+    return gradients[player.cultivation.realm] || 'from-gray-500 to-gray-700';
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 p-6 text-white">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+          Cultivation Chamber
+        </h2>
+        <div className={`px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${getRealmGradient()}`}>
+          {player.cultivation.realm} Stage {player.cultivation.stage}
+        </div>
+      </div>
+      
+      {/* Qi Progress Bar */}
+      <div className="mb-6">
+        <div className="flex justify-between text-sm mb-2">
+          <span>Qi Accumulation</span>
+          <span className="font-mono">
+            {Math.floor(player.cultivation.qi)} / {Math.floor(player.cultivation.maxQi)}
+          </span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-3 mb-1">
+          <div 
+            className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-500 shadow-lg shadow-green-500/25"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>Progress: {progress.toFixed(1)}%</span>
+          <span>Next: {Math.floor(breakthroughCost)} Qi</span>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* Cultivation Controls */}
+        <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+          <h3 className="font-semibold mb-3 text-lg">Cultivation Controls</h3>
+          
+          {/* Cultivation Amount Slider */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span>Cultivation Intensity</span>
+              <span className="font-mono text-green-400">{cultivationAmount} Qi/s</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="100"
+              step="5"
+              value={cultivationAmount}
+              onChange={(e) => setCultivationAmount(Number(e.target.value))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-green-400 [&::-webkit-slider-thumb]:to-emerald-500"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={handleCultivate}
+              disabled={isCultivating}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            >
+              🧘 Cultivate Once
+            </button>
+            
+            <button
+              onClick={startContinuousCultivation}
+              className={`font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg ${
+                isCultivating
+                  ? 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'
+                  : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'
+              }`}
+            >
+              {isCultivating ? '⏹️ Stop' : '🌀 Continuous'}
+            </button>
+          </div>
+
+          {/* Auto Breakthrough Toggle */}
+          <div className="flex items-center justify-between mt-4 p-3 bg-white/5 rounded-lg">
+            <span className="text-sm">Auto Breakthrough</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoBreakthrough}
+                onChange={(e) => setAutoBreakthrough(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-700 peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+          </div>
+        </div>
+
+        {/* Cultivation Stats */}
+        <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+          <h3 className="font-semibold mb-3 text-lg">Cultivation Stats</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Speed:</span>
+                <span className="text-green-400 font-mono">{cultivationSpeed.toFixed(2)}x</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Intelligence:</span>
+                <span className="text-blue-400">+{player.stats.intelligence}%</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Stage Bonus:</span>
+                <span className="text-yellow-400">+{((player.cultivation.stage - 1) * 5).toFixed(0)}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Realm Multiplier:</span>
+                <span className="text-purple-400">
+                  {CultivationEngine.REALMS[player.cultivation.realm] ? 
+                    (CultivationEngine.getCultivationSpeed({ cultivation: { realm: player.cultivation.realm, stage: 1 } }) - 1) * 100 + '%' 
+                    : '0%'
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Breakthrough Section */}
+        {canBreakthrough && (
+          <div className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 rounded-xl p-4 border border-yellow-500/30">
+            <h3 className="font-semibold mb-3 text-lg text-yellow-300">Breakthrough Available!</h3>
+            <div className="space-y-3">
+              <div className="text-sm text-yellow-200">
+                You have enough Qi to advance to {
+                  player.cultivation.stage === CultivationEngine.REALMS[player.cultivation.realm].maxStage && nextRealm
+                    ? `${nextRealm.name} Realm`
+                    : `Stage ${player.cultivation.stage + 1}`
+                }
+              </div>
+              <button
+                onClick={handleBreakthrough}
+                className="w-full bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-lg shadow-yellow-500/25"
+              >
+                ⚡ Breakthrough Now
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Cultivation Log */}
+        <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+          <h3 className="font-semibold mb-3 text-lg">Cultivation Log</h3>
+          <div className="h-32 overflow-y-auto space-y-2 text-sm">
+            {cultivationLog.length === 0 ? (
+              <div className="text-gray-500 text-center py-4">No cultivation activity yet...</div>
+            ) : (
+              cultivationLog.map(log => (
+                <div key={log.id} className="flex justify-between items-center py-1 border-b border-white/5">
+                  <span className="text-gray-300">{log.message}</span>
+                  <span className="text-gray-500 text-xs">{log.timestamp}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Next Realm Info */}
+        {nextRealm && (
+          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
+            <h3 className="font-semibold mb-2 text-lg text-purple-300">Next Realm: {nextRealm.name}</h3>
+            <p className="text-sm text-purple-200 mb-3">{nextRealm.description}</p>
+            <div className="text-xs text-purple-300 space-y-1">
+              <div>+{nextRealm.healthBonus} Max Health</div>
+              <div>+{nextRealm.statBonus.strength} Strength</div>
+              <div>+{nextRealm.statBonus.intelligence} Intelligence</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Continuous Cultivation Animation */}
+      {isCultivating && (
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 animate-pulse pointer-events-none"></div>
+      )}
+    </div>
+  );
+}",component/game/Inventory.js"'use client';
+import { useGameStore } from '@/store/gameStore';
+import { ITEMS } from '@/lib/data/items';
+
+export default function Inventory() {
+  const { player, removeItem } = useGameStore();
+
+  const handleUseItem = (item) => {
+    // In a real implementation, this would apply item effects
+    alert(`Used ${item.name}`);
+    removeItem(item.id);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h2 className="text-2xl font-bold text-cultivation-primary mb-4">
+        Inventory
+      </h2>
+      
+      <div className="mb-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">Gold:</span>
+          <span className="text-yellow-600 font-bold">{player.gold} 🪙</span>
+        </div>
+      </div>
+
+      <div className="space-y-2 max-h-96 overflow-y-auto">
+        {player.inventory.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Your inventory is empty</p>
+        ) : (
+          player.inventory.map((item, index) => (
+            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded border">
+              <div>
+                <h3 className="font-semibold">{item.name}</h3>
+                <p className="text-sm text-gray-600">{item.description}</p>
+              </div>
+              <button
+                onClick={() => handleUseItem(item)}
+                className="bg-cultivation-primary text-white px-3 py-1 rounded text-sm hover:bg-cultivation-secondary"
+              >
+                Use
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}",component/game/Relationships.js"'use client';
+import { useGameStore } from '@/store/gameStore';
+import { RelationshipsEngine } from '@/lib/gameEngine/relationships';
+
+export default function Relationships() {
+  const { player } = useGameStore();
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h2 className="text-2xl font-bold text-cultivation-primary mb-4">
+        Relationships
+      </h2>
+
+      <div className="space-y-4">
+        {Object.entries(RelationshipsEngine.factions).map(([faction, data]) => (
+          <div key={faction} className="border rounded-lg p-4">
+            <h3 className="font-bold text-lg">{faction}</h3>
+            
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full ${
+                    data.relations >= 50 ? 'bg-green-500' :
+                    data.relations >= 0 ? 'bg-blue-500' :
+                    'bg-red-500'
+                  }`}
+                  style={{ width: `${data.relations + 100}%` }}
+                ></div>
+              </div>
+              <span className="text-sm font-medium">{data.relations}</span>
+            </div>
+
+            <div className="text-sm text-gray-600">
+              <p>Alignment: <span className="capitalize">{data.alignment}</span></p>
+              <p>Benefits: {RelationshipsEngine.getFactionBenefits(data.relations).join(', ')}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}",component/game/SectManagement.js "'use client';
+import { useGameStore } from '@/store/gameStore';
+import { SECTS, getAvailableSects } from '@/lib/data/sects';
+
+export default function SectManagement() {
+  const { player } = useGameStore();
+  const availableSects = getAvailableSects(player.cultivation.realm, player.cultivation.stage);
+
+  const joinSect = (sectId) => {
+    // In real implementation, this would update player's sect
+    alert(`Joined ${SECTS[sectId].name}`);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h2 className="text-2xl font-bold text-cultivation-primary mb-4">
+        Sect Management
+      </h2>
+
+      <div className="space-y-4">
+        {availableSects.length === 0 ? (
+          <p className="text-gray-500">No sects available. Advance your cultivation to join a sect.</p>
+        ) : (
+          availableSects.map(sect => (
+            <div key={sect.id} className="border rounded-lg p-4">
+              <h3 className="font-bold text-lg">{sect.name}</h3>
+              <p className="text-sm text-gray-600 mb-2">{sect.description}</p>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    sect.alignment === 'righteous' ? 'bg-blue-100 text-blue-800' :
+                    sect.alignment === 'demonic' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {sect.alignment}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => joinSect(sect.id)}
+                  className="bg-cultivation-primary text-white px-4 py-2 rounded hover:bg-cultivation-secondary"
+                >
+                  Join Sect
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}",component/game/Shop.js"'use client';
+import { useState } from 'react';
+import { useGameStore } from '@/store/gameStore';
+
+export default function Shop() {
+  const { player, addItem, removeItem } = useGameStore();
+  const [activeCategory, setActiveCategory] = useState('manuals');
+
+  const shopItems = {
+    manuals: [
+      {
+        id: 'basic-meditation',
+        name: 'Basic Meditation Manual',
+        description: 'Increases Qi gathering speed by 20%',
+        price: 50,
+        type: 'manual',
+        effect: { cultivationSpeed: 1.2 }
+      },
+      {
+        id: 'qi-circulation',
+        name: 'Qi Circulation Technique',
+        description: 'Improves Qi efficiency and control',
+        price: 100,
+        type: 'manual',
+        effect: { maxQi: 1.3 }
+      }
+    ],
+    pills: [
+      {
+        id: 'healing-pill',
+        name: 'Healing Pill',
+        description: 'Restores 50 health points',
+        price: 25,
+        type: 'consumable',
+        effect: { health: 50 }
+      },
+      {
+        id: 'qi-pill',
+        name: 'Qi Restoration Pill',
+        description: 'Instantly restores 100 Qi',
+        price: 40,
+        type: 'consumable',
+        effect: { qi: 100 }
+      }
+    ],
+    techniques: [
+      {
+        id: 'dragon-fist',
+        name: 'Dragon Fist Technique',
+        description: 'Basic offensive technique for beginners',
+        price: 150,
+        type: 'technique',
+        effect: { combatPower: 15 }
+      }
+    ]
+  };
+
+  const handleBuyItem = (item) => {
+    if (player.gold >= item.price) {
+      removeItem(item.price, 'gold');
+      addItem(item);
+      alert(`Purchased ${item.name}!`);
+    } else {
+      alert('Not enough gold!');
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-amber-900 to-yellow-900 rounded-2xl shadow-2xl border border-amber-500/30 p-6 text-white">
+      <h2 className="text-2xl font-bold text-amber-300 mb-6 flex items-center gap-3">
+        🏪 Cultivation Shop
+      </h2>
+
+      {/* Shop Categories */}
+      <div className="flex gap-2 mb-6">
+        {Object.keys(shopItems).map(category => (
+          <button
+            key={category}
+            onClick={() => setActiveCategory(category)}
+            className={`px-4 py-2 rounded-lg capitalize transition-all ${
+              activeCategory === category
+                ? 'bg-amber-600 text-white shadow-lg'
+                : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      {/* Player Gold */}
+      <div className="bg-amber-500/20 rounded-lg p-4 mb-6 border border-amber-500/30">
+        <div className="flex justify-between items-center">
+          <span className="text-amber-300">Your Gold:</span>
+          <span className="text-2xl font-bold text-yellow-400">{player.gold} 🪙</span>
+        </div>
+      </div>
+
+      {/* Items Grid */}
+      <div className="grid gap-4">
+        {shopItems[activeCategory].map(item => (
+          <div key={item.id} className="bg-black/30 rounded-xl p-4 border border-white/10">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="font-bold text-lg text-amber-200">{item.name}</h3>
+                <p className="text-gray-300 text-sm">{item.description}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-yellow-400 font-bold text-lg">{item.price} 🪙</div>
+                <button
+                  onClick={() => handleBuyItem(item)}
+                  disabled={player.gold < item.price}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm transition-all mt-2"
+                >
+                  Buy
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Shopkeeper Message */}
+      <div className="mt-6 p-4 bg-black/40 rounded-lg border border-amber-500/20">
+        <p className="text-amber-200 text-sm">
+          "These items will aid your cultivation journey, young disciple. Choose wisely!"
+        </p>
+      </div>
+    </div>
+  );
+}",component/game/StoryQuests.js"'use client';
+import { useGameStore } from '@/store/gameStore';
+
+export default function StoryQuests() {
+  const { world } = useGameStore();
+
+  const quests = [
+    { id: 1, name: 'First Steps', description: 'Reach Qi Condensation Realm', completed: true },
+    { id: 2, name: 'Forest Exploration', description: 'Discover the Mysterious Forest', completed: world.discoveredLocations.includes('forest') },
+    { id: 3, name: 'Mountain Ascent', description: 'Reach the Spiritual Mountains', completed: world.discoveredLocations.includes('mountains') },
+  ];
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <h2 className="text-2xl font-bold text-cultivation-primary mb-4">
+        Story Quests
+      </h2>
+
+      <div className="space-y-3">
+        {quests.map(quest => (
+          <div key={quest.id} className="flex items-center gap-3 p-3 border rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${quest.completed ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+            <div className="flex-1">
+              <h3 className="font-semibold">{quest.name}</h3>
+              <p className="text-sm text-gray-600">{quest.description}</p>
+            </div>
+            <span className={`text-xs px-2 py-1 rounded ${
+              quest.completed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {quest.completed ? 'Completed' : 'In Progress'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}",component/game/WorldMap.js"'use client';
+import { useGameStore } from '@/store/gameStore';
+
+export default function WorldMap() {
+  const { player, world, travelTo, discoverLocation } = useGameStore();
+
+  const locations = {
+    'starting-village': {
+      name: 'Starting Village',
+      description: 'Your humble beginning. A peaceful village where you first learned of cultivation.',
+      level: 'Mortal',
+      type: 'safe',
+      x: 50,
+      y: 70,
+      connections: ['forest', 'training-grounds'],
+      shops: ['basic-shop'],
+      events: ['tutorial']
+    },
+    'forest': {
+      name: 'Mysterious Forest',
+      description: 'A dense forest filled with spiritual energy and low-level demon beasts.',
+      level: 'Qi Condensation',
+      type: 'wilderness',
+      x: 30,
+      y: 40,
+      connections: ['starting-village', 'mountain-foot'],
+      events: ['combat', 'herb-gathering']
+    },
+    'training-grounds': {
+      name: 'Training Grounds',
+      description: 'Where cultivators practice techniques and spar with each other.',
+      level: 'All',
+      type: 'training',
+      x: 70,
+      y: 60,
+      connections: ['starting-village'],
+      events: ['training', 'technique-learning']
+    },
+    'mountain-foot': {
+      name: 'Mountain Foot',
+      description: 'The base of the Spiritual Mountains. Higher spiritual energy here.',
+      level: 'Foundation',
+      type: 'wilderness',
+      x: 40,
+      y: 20,
+      connections: ['forest'],
+      events: ['cultivation-boost']
+    },
+    'sect-hall': {
+      name: `${player.sect} Sect Hall`,
+      description: `The main hall of your ${player.sect} sect. Receive missions and guidance here.`,
+      level: 'All',
+      type: 'sect',
+      x: 80,
+      y: 30,
+      connections: [],
+      events: ['sect-quests', 'techniques']
+    }
+  };
+
+  const handleLocationClick = (locationId) => {
+    if (world.discoveredLocations.includes(locationId) || locationId === 'starting-village') {
+      travelTo(locationId);
+      
+      // Discover connected locations
+      const connectedLocations = locations[locationId]?.connections || [];
+      connectedLocations.forEach(connId => {
+        if (!world.discoveredLocations.includes(connId)) {
+          discoverLocation(connId);
+        }
+      });
+    }
+  };
+
+  const canTravelTo = (locationId) => {
+    const location = locations[locationId];
+    if (!location) return false;
+    
+    // Check cultivation level requirement
+    const levelRequirements = {
+      'Mortal': 0,
+      'Qi Condensation': 1,
+      'Foundation': 2,
+      'Golden Core': 3,
+      'Nascent Soul': 4
+    };
+    
+    const playerLevel = levelRequirements[player.cultivation.realm] || 0;
+    const locationLevel = levelRequirements[location.level] || 0;
+    
+    return playerLevel >= locationLevel;
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 p-6 text-white">
+      <h2 className="text-2xl font-bold text-blue-300 mb-6 flex items-center gap-3">
+        🗺️ World Map
+      </h2>
+
+      {/* Map Container */}
+      <div className="relative bg-gradient-to-br from-green-900 to-blue-900 h-96 rounded-xl border-2 border-yellow-500/30 mb-6 overflow-hidden">
+        {/* Simplified Background Pattern */}
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.15)_1px,transparent_0)] bg-[length:20px_20px]"></div>
+        
+        {/* Locations */}
+        {Object.entries(locations).map(([id, location]) => {
+          const isDiscovered = world.discoveredLocations.includes(id) || id === 'starting-village';
+          const isCurrent = player.location === id;
+          const canTravel = canTravelTo(id);
+          
+          return (
+            <button
+              key={id}
+              onClick={() => handleLocationClick(id)}
+              disabled={!isDiscovered || !canTravel}
+              className={`absolute transform -translate-x-1/2 -translate-y-1/2 p-3 rounded-xl text-sm font-medium transition-all duration-300 ${
+                isCurrent
+                  ? 'bg-red-500 text-white shadow-2xl scale-110 ring-4 ring-red-400/50 z-10'
+                  : isDiscovered && canTravel
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:scale-105 hover:shadow-xl cursor-pointer'
+                  : isDiscovered
+                  ? 'bg-gray-600 text-gray-300 cursor-not-allowed opacity-70'
+                  : 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-40'
+              }`}
+              style={{ left: `${location.x}%`, top: `${location.y}%` }}
+              title={!isDiscovered ? 'Undiscovered' : !canTravel ? `Requires ${location.level} Realm` : location.description}
+            >
+              <div className="flex items-center gap-2">
+                <span>
+                  {isCurrent ? '📍' : 
+                   location.type === 'safe' ? '🏠' :
+                   location.type === 'wilderness' ? '🌲' :
+                   location.type === 'training' ? '⚔️' :
+                   location.type === 'sect' ? '🏯' : '📍'}
+                </span>
+                <span>{location.name}</span>
+              </div>
+              {isCurrent && <div className="text-xs mt-1">Current Location</div>}
+            </button>
+          );
+        })}
+
+        {/* Connection Lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+          {Object.entries(locations).map(([id, location]) =>
+            location.connections.map(connId => {
+              const connLocation = locations[connId];
+              if (!connLocation) return null;
+              
+              const isDiscovered = world.discoveredLocations.includes(connId) || connId === 'starting-village';
+              
+              return (
+                <line
+                  key={`${id}-${connId}`}
+                  x1={`${location.x}%`}
+                  y1={`${location.y}%`}
+                  x2={`${connLocation.x}%`}
+                  y2={`${connLocation.y}%`}
+                  stroke={isDiscovered ? "rgba(59, 130, 246, 0.5)" : "rgba(75, 85, 99, 0.3)"}
+                  strokeWidth="2"
+                  strokeDasharray={isDiscovered ? "none" : "5,5"}
+                />
+              );
+            })
+          )}
+        </svg>
+      </div>
+
+      {/* Location Info */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+          <h3 className="font-bold text-lg mb-3">Current Location</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Name:</span>
+              <span className="text-white font-semibold">{locations[player.location]?.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Type:</span>
+              <span className="capitalize text-blue-300">{locations[player.location]?.type}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Level:</span>
+              <span className="text-green-300">{locations[player.location]?.level}</span>
+            </div>
+            <p className="text-gray-300 text-sm mt-3">{locations[player.location]?.description}</p>
+          </div>
+        </div>
+
+        <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+          <h3 className="font-bold text-lg mb-3">Exploration Progress</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span>Discovered Locations:</span>
+              <span>{world.discoveredLocations.length} / {Object.keys(locations).length}</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(world.discoveredLocations.length / Object.keys(locations).length) * 100}%` }}
+              ></div>
+            </div>
+            <div className="text-xs text-gray-400">
+              Discover new locations by traveling to connected areas
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}", lib/data/items.js"export const ITEMS = {
+  'spirit-stone': {
+    id: 'spirit-stone',
+    name: 'Spirit Stone',
+    type: 'cultivation',
+    rarity: 'common',
+    value: 10,
+    description: 'A stone containing spiritual energy for cultivation',
+    useEffect: (player) => ({ qi: player.cultivation.qi + 50 })
+  },
+  'healing-pill': {
+    id: 'healing-pill',
+    name: 'Healing Pill',
+    type: 'consumable',
+    rarity: 'common',
+    value: 25,
+    description: 'Restores health points',
+    useEffect: (player) => ({ health: Math.min(player.health + 30, player.maxHealth) })
+  },
+  'qi-replenishment-pill': {
+    id: 'qi-replenishment-pill',
+    name: 'Qi Replenishment Pill',
+    type: 'consumable',
+    rarity: 'uncommon',
+    value: 40,
+    description: 'Restores spiritual energy',
+    useEffect: (player) => ({ qi: Math.min(player.cultivation.qi + 100, player.cultivation.maxQi) })
+  },
+  'breakthrough-pill': {
+    id: 'breakthrough-pill',
+    name: 'Breakthrough Pill',
+    type: 'cultivation',
+    rarity: 'rare',
+    value: 150,
+    description: 'Increases chances of successful breakthrough',
+    useEffect: (player) => ({ cultivation: { ...player.cultivation, qi: player.cultivation.qi + 200 } })
+  }
+};
+
+export const getItemById = (id) => ITEMS[id];
+export const getItemsByType = (type) => Object.values(ITEMS).filter(item => item.type === type);" lib/data/sects.js "export const ITEMS = {
+  'spirit-stone': {
+    id: 'spirit-stone',
+    name: 'Spirit Stone',
+    type: 'cultivation',
+    rarity: 'common',
+    value: 10,
+    description: 'A stone containing spiritual energy for cultivation',
+    useEffect: (player) => ({ qi: player.cultivation.qi + 50 })
+  },
+  'healing-pill': {
+    id: 'healing-pill',
+    name: 'Healing Pill',
+    type: 'consumable',
+    rarity: 'common',
+    value: 25,
+    description: 'Restores health points',
+    useEffect: (player) => ({ health: Math.min(player.health + 30, player.maxHealth) })
+  },
+  'qi-replenishment-pill': {
+    id: 'qi-replenishment-pill',
+    name: 'Qi Replenishment Pill',
+    type: 'consumable',
+    rarity: 'uncommon',
+    value: 40,
+    description: 'Restores spiritual energy',
+    useEffect: (player) => ({ qi: Math.min(player.cultivation.qi + 100, player.cultivation.maxQi) })
+  },
+  'breakthrough-pill': {
+    id: 'breakthrough-pill',
+    name: 'Breakthrough Pill',
+    type: 'cultivation',
+    rarity: 'rare',
+    value: 150,
+    description: 'Increases chances of successful breakthrough',
+    useEffect: (player) => ({ cultivation: { ...player.cultivation, qi: player.cultivation.qi + 200 } })
+  }
+};
+
+export const getItemById = (id) => ITEMS[id];
+export const getItemsByType = (type) => Object.values(ITEMS).filter(item => item.type === type);" lib/data/techniques.js"export const ITEMS = {
+  'spirit-stone': {
+    id: 'spirit-stone',
+    name: 'Spirit Stone',
+    type: 'cultivation',
+    rarity: 'common',
+    value: 10,
+    description: 'A stone containing spiritual energy for cultivation',
+    useEffect: (player) => ({ qi: player.cultivation.qi + 50 })
+  },
+  'healing-pill': {
+    id: 'healing-pill',
+    name: 'Healing Pill',
+    type: 'consumable',
+    rarity: 'common',
+    value: 25,
+    description: 'Restores health points',
+    useEffect: (player) => ({ health: Math.min(player.health + 30, player.maxHealth) })
+  },
+  'qi-replenishment-pill': {
+    id: 'qi-replenishment-pill',
+    name: 'Qi Replenishment Pill',
+    type: 'consumable',
+    rarity: 'uncommon',
+    value: 40,
+    description: 'Restores spiritual energy',
+    useEffect: (player) => ({ qi: Math.min(player.cultivation.qi + 100, player.cultivation.maxQi) })
+  },
+  'breakthrough-pill': {
+    id: 'breakthrough-pill',
+    name: 'Breakthrough Pill',
+    type: 'cultivation',
+    rarity: 'rare',
+    value: 150,
+    description: 'Increases chances of successful breakthrough',
+    useEffect: (player) => ({ cultivation: { ...player.cultivation, qi: player.cultivation.qi + 200 } })
+  }
+};
+
+export const getItemById = (id) => ITEMS[id];
+export const getItemsByType = (type) => Object.values(ITEMS).filter(item => item.type === type);" lib/data/worlds.js"export const WORLDS = {
+  'starting-village': {
+    name: 'Starting Village',
+    description: 'A peaceful village where your cultivation journey begins',
+    type: 'safe',
+    cultivationBonus: 1.0,
+    enemies: ['Wild Beast'],
+    shops: ['General Store'],
+    connections: ['forest', 'mountains']
+  },
+  'forest': {
+    name: 'Mysterious Forest',
+    description: 'A dense forest filled with spiritual energy and dangers',
+    type: 'wilderness',
+    cultivationBonus: 1.2,
+    enemies: ['Wild Beast', 'Bandit'],
+    shops: [],
+    connections: ['starting-village', 'ancient-ruins']
+  },
+  'mountains': {
+    name: 'Spiritual Mountains',
+    description: 'Sacred mountains where powerful cultivators meditate',
+    type: 'sacred',
+    cultivationBonus: 1.5,
+    enemies: ['Ancient Spirit'],
+    shops: ['Alchemist'],
+    connections: ['starting-village', 'cultivator-city']
+  },
+  'cultivator-city': {
+    name: 'Cultivator City',
+    description: 'A bustling city filled with cultivators of all realms',
+    type: 'city',
+    cultivationBonus: 1.1,
+    enemies: ['Demonic Cultivator'],
+    shops: ['Auction House', 'Technique Hall', 'Alchemist'],
+    connections: ['mountains']
+  }
+};
+
+export const getWorld = (worldId) => WORLDS[worldId];
+export const getConnectedWorlds = (worldId) => {
+  const world = WORLDS[worldId];
+  return world ? world.connections.map(conn => WORLDS[conn]) : [];
+};", lib/gameEngine/combat.js"export class CombatEngine {
+  static calculateDamage(attacker, defender, technique = null) {
+    let baseDamage = attacker.stats.strength;
+    if (technique) baseDamage += technique.power;
+    
+    const defense = defender.stats.vitality * 0.7;
+    let finalDamage = Math.max(1, baseDamage - defense);
+    
+    const critChance = attacker.stats.agility / 200;
+    if (Math.random() < critChance) {
+      finalDamage *= 2;
+      return { damage: finalDamage, critical: true };
+    }
+    
+    return { damage: finalDamage, critical: false };
+  }
+
+  static executeTurn(player, enemy, playerAction) {
+    const combatLog = [];
+    
+    if (playerAction.type === 'attack' && player.health > 0) {
+      const attackResult = this.calculateDamage(player, enemy, playerAction.technique);
+      enemy.health -= attackResult.damage;
+      combatLog.push({
+        type: 'player_attack',
+        damage: attackResult.damage,
+        critical: attackResult.critical,
+        message: `${player.name} ${attackResult.critical ? 'critically ' : ''}strikes for ${attackResult.damage} damage!`
+      });
+    }
+    
+    if (enemy.health > 0 && player.health > 0) {
+      const enemyAttack = this.calculateDamage(enemy, player);
+      player.health -= enemyAttack.damage;
+      combatLog.push({
+        type: 'enemy_attack', 
+        damage: enemyAttack.damage,
+        message: `${enemy.name} attacks for ${enemyAttack.damage} damage!`
+      });
+    }
+    
+    if (player.health <= 0) {
+      combatLog.push({ type: 'defeat', message: 'You have been defeated!' });
+    } else if (enemy.health <= 0) {
+      combatLog.push({ type: 'victory', message: `You have defeated ${enemy.name}!` });
+    }
+    
+    return combatLog;
+  }
+
+  static generateEnemy(playerLevel) {
+    const enemies = [
+      { name: 'Wild Beast', baseHealth: 30, baseDamage: 5 },
+      { name: 'Bandit', baseHealth: 40, baseDamage: 8 },
+      { name: 'Demonic Cultivator', baseHealth: 60, baseDamage: 12 },
+      { name: 'Ancient Spirit', baseHealth: 100, baseDamage: 18 }
+    ];
+    
+    const enemyTemplate = enemies[Math.floor(Math.random() * enemies.length)];
+    const levelMultiplier = 1 + (playerLevel * 0.2);
+    
+    return {
+      name: enemyTemplate.name,
+      health: Math.floor(enemyTemplate.baseHealth * levelMultiplier),
+      maxHealth: Math.floor(enemyTemplate.baseHealth * levelMultiplier),
+      stats: {
+        strength: Math.floor(enemyTemplate.baseDamage * levelMultiplier),
+        vitality: Math.floor(enemyTemplate.baseHealth * levelMultiplier * 0.1),
+        agility: 10
+      }
+    };
+  }
+}", lib/gameEngine/cultivation.js"// Cultivation Engine - Handles all cultivation-related calculations and logic
+
+export class CultivationEngine {
+  // Define all cultivation realms and their properties
+  static REALMS = {
+    'Mortal': { 
+      name: 'Mortal', 
+      maxStage: 3, 
+      baseQi: 100,
+      color: 'gray',
+      description: 'An ordinary mortal with slight spiritual awareness',
+      healthBonus: 0,
+      statBonus: { strength: 0, agility: 0, intelligence: 0, vitality: 0 }
+    },
+    'Qi Condensation': { 
+      name: 'Qi Condensation', 
+      maxStage: 9, 
+      baseQi: 500,
+      color: 'green', 
+      description: 'Can sense and absorb spiritual energy',
+      healthBonus: 50,
+      statBonus: { strength: 5, agility: 5, intelligence: 10, vitality: 5 }
+    },
+    'Foundation': { 
+      name: 'Foundation', 
+      maxStage: 9, 
+      baseQi: 2000,
+      color: 'blue',
+      description: 'Established a solid foundation for cultivation',
+      healthBonus: 100,
+      statBonus: { strength: 10, agility: 10, intelligence: 20, vitality: 10 }
+    },
+    'Golden Core': { 
+      name: 'Golden Core', 
+      maxStage: 9, 
+      baseQi: 10000,
+      color: 'gold',
+      description: 'Formed a golden core, lifespan extends significantly',
+      healthBonus: 200,
+      statBonus: { strength: 20, agility: 20, intelligence: 40, vitality: 20 }
+    },
+    'Nascent Soul': { 
+      name: 'Nascent Soul', 
+      maxStage: 9, 
+      baseQi: 50000,
+      color: 'purple',
+      description: 'Cultivated a nascent soul, approaching immortality',
+      healthBonus: 500,
+      statBonus: { strength: 50, agility: 50, intelligence: 100, vitality: 50 }
+    },
+    'Immortal Emperor': { 
+      name: 'Immortal Emperor', 
+      maxStage: 9, 
+      baseQi: 250000,
+      color: 'rainbow',
+      description: 'The ultimate cultivation realm, ruler of the cosmos',
+      healthBonus: 1000,
+      statBonus: { strength: 100, agility: 100, intelligence: 200, vitality: 100 }
+    }
+  };
+
+  // Calculate how much qi needed for next breakthrough
+  static calculateBreakthroughCost(currentRealm, currentStage) {
+    const baseCost = this.REALMS[currentRealm]?.baseQi || 100;
+    // Exponential cost increase: base * 1.8^(stage-1)
+    return Math.floor(baseCost * Math.pow(1.8, currentStage - 1));
+  }
+
+  // Check if player can attempt breakthrough
+  static canBreakthrough(playerCultivation) {
+    if (!playerCultivation) return false;
+    
+    const { realm, stage, qi } = playerCultivation;
+    const realmData = this.REALMS[realm];
+    
+    if (!realmData) return false;
+    
+    const cost = this.calculateBreakthroughCost(realm, stage);
+    return qi >= cost && stage < realmData.maxStage;
+  }
+
+  // Check if player can breakthrough to next realm
+  static canAdvanceRealm(playerCultivation) {
+    if (!playerCultivation) return false;
+    
+    const { realm, stage, qi } = playerCultivation;
+    const realmData = this.REALMS[realm];
+    const nextRealm = this.getNextRealmInfo(realm);
+    
+    if (!realmData || !nextRealm) return false;
+    
+    // Need to be at max stage and have enough qi for realm advancement
+    const realmAdvancementCost = this.calculateBreakthroughCost(realm, stage) * 5; // 5x cost for realm change
+    return stage === realmData.maxStage && qi >= realmAdvancementCost;
+  }
+
+  // Calculate automatic cultivation with breakthroughs
+  static calculateCultivationCycle(player, cultivationAmount, autoBreakthrough = true) {
+    let remainingQi = cultivationAmount;
+    const breakthroughs = [];
+    let newPlayerState = { ...player };
+    
+    while (remainingQi > 0) {
+      const currentQi = newPlayerState.cultivation.qi;
+      const maxQi = newPlayerState.cultivation.maxQi;
+      const realm = newPlayerState.cultivation.realm;
+      const stage = newPlayerState.cultivation.stage;
+      
+      // Add qi (capped at max)
+      const qiToAdd = Math.min(remainingQi, maxQi - currentQi);
+      newPlayerState.cultivation.qi = currentQi + qiToAdd;
+      remainingQi -= qiToAdd;
+      
+      // Check for breakthroughs
+      if (autoBreakthrough && this.canBreakthrough(newPlayerState.cultivation)) {
+        if (this.canAdvanceRealm(newPlayerState.cultivation)) {
+          // Realm advancement
+          const nextRealm = this.getNextRealmInfo(realm);
+          breakthroughs.push({
+            type: 'realm',
+            from: realm,
+            to: nextRealm.name,
+            stage: 1
+          });
+          
+          newPlayerState.cultivation.realm = nextRealm.name;
+          newPlayerState.cultivation.stage = 1;
+          newPlayerState.cultivation.qi = 0;
+          newPlayerState.cultivation.maxQi = nextRealm.baseQi;
+          newPlayerState.cultivation.speed *= 1.2;
+          
+        } else {
+          // Stage advancement
+          breakthroughs.push({
+            type: 'stage',
+            realm: realm,
+            from: stage,
+            to: stage + 1
+          });
+          
+          newPlayerState.cultivation.stage += 1;
+          const breakthroughCost = this.calculateBreakthroughCost(realm, stage);
+          newPlayerState.cultivation.qi -= breakthroughCost;
+          newPlayerState.cultivation.maxQi *= 1.5;
+        }
+        
+        // Reset remaining qi calculation since state changed
+        remainingQi = cultivationAmount;
+      } else {
+        // No more breakthroughs possible or auto-breakthrough disabled
+        break;
+      }
+    }
+    
+    return {
+      newPlayerState,
+      breakthroughs,
+      qiUsed: cultivationAmount - remainingQi
+    };
+  }
+
+  // Calculate cultivation speed based on various factors
+  static getCultivationSpeed(player, technique = null, locationBonus = 1) {
+    if (!player?.cultivation) return 1;
+    
+    let speed = 1;
+    
+    // Realm multiplier (higher realms cultivate faster)
+    const realmMultipliers = {
+      'Mortal': 1,
+      'Qi Condensation': 2,
+      'Foundation': 4,
+      'Golden Core': 8,
+      'Nascent Soul': 16,
+      'Immortal Emperor': 32
+    };
+    
+    speed *= realmMultipliers[player.cultivation.realm] || 1;
+    
+    // Technique multiplier
+    if (technique && technique.efficiency) {
+      speed *= technique.efficiency;
+    }
+    
+    // Intelligence stat bonus (1% per point)
+    if (player.stats?.intelligence) {
+      speed *= (1 + player.stats.intelligence / 100);
+    }
+    
+    // Cultivation stage bonus (slight boost per stage)
+    if (player.cultivation.stage) {
+      speed *= (1 + (player.cultivation.stage - 1) * 0.05);
+    }
+    
+    // Cultivation speed from player state
+    if (player.cultivation.speed) {
+      speed *= player.cultivation.speed;
+    }
+    
+    // Location bonus (sacred grounds etc.)
+    speed *= locationBonus;
+    
+    return Math.max(0.1, speed); // Minimum 10% speed
+  }
+
+  // Get cultivation progress percentage (0-100)
+  static getProgressPercentage(playerCultivation) {
+    if (!playerCultivation) return 0;
+    
+    const { realm, stage, qi } = playerCultivation;
+    const cost = this.calculateBreakthroughCost(realm, stage);
+    
+    if (cost <= 0) return 100; // Max stage
+    
+    const progress = (qi / cost) * 100;
+    return Math.min(progress, 100);
+  }
+
+  // Get next realm info
+  static getNextRealmInfo(currentRealm) {
+    const realms = Object.keys(this.REALMS);
+    const currentIndex = realms.indexOf(currentRealm);
+    
+    if (currentIndex < realms.length - 1) {
+      return this.REALMS[realms[currentIndex + 1]];
+    }
+    return null;
+  }
+
+  // Calculate max cultivation possible in one session
+  static getMaxCultivationPossible(player) {
+    const { realm, stage, qi, maxQi } = player.cultivation;
+    const realmData = this.REALMS[realm];
+    
+    if (!realmData) return 0;
+    
+    let totalCultivation = 0;
+    let currentStage = stage;
+    let currentRealm = realm;
+    let currentQi = qi;
+    
+    while (currentRealm && currentStage <= realmData.maxStage) {
+      const breakthroughCost = this.calculateBreakthroughCost(currentRealm, currentStage);
+      const qiNeeded = breakthroughCost - currentQi;
+      totalCultivation += Math.max(0, qiNeeded);
+      
+      // Move to next stage
+      currentStage++;
+      currentQi = 0;
+      
+      // Check for realm advancement
+      if (currentStage > realmData.maxStage) {
+        const nextRealm = this.getNextRealmInfo(currentRealm);
+        if (nextRealm) {
+          currentRealm = nextRealm.name;
+          currentStage = 1;
+        } else {
+          break; // Reached max realm
+        }
+      }
+    }
+    
+    return totalCultivation;
+  }
+
+  // Get cultivation efficiency (for UI display)
+  static getCultivationEfficiency(player) {
+    if (!player) return { speed: 1, bonuses: [] };
+    
+    const speed = this.getCultivationSpeed(player);
+    const bonuses = [];
+    
+    // Realm bonus
+    const realmMultipliers = {
+      'Mortal': 1,
+      'Qi Condensation': 2,
+      'Foundation': 4,
+      'Golden Core': 8,
+      'Nascent Soul': 16,
+      'Immortal Emperor': 32
+    };
+    const realmBonus = realmMultipliers[player.cultivation.realm] || 1;
+    if (realmBonus > 1) {
+      bonuses.push(`Realm: ${(realmBonus - 1) * 100}%`);
+    }
+    
+    // Intelligence bonus
+    if (player.stats?.intelligence) {
+      const intBonus = player.stats.intelligence / 100;
+      bonuses.push(`Intelligence: ${(intBonus * 100).toFixed(0)}%`);
+    }
+    
+    // Stage bonus
+    const stageBonus = (player.cultivation.stage - 1) * 0.05;
+    if (stageBonus > 0) {
+      bonuses.push(`Stage: ${(stageBonus * 100).toFixed(0)}%`);
+    }
+    
+    // Speed bonus from cultivation
+    if (player.cultivation.speed && player.cultivation.speed > 1) {
+      bonuses.push(`Cultivation: ${((player.cultivation.speed - 1) * 100).toFixed(0)}%`);
+    }
+    
+    return { speed, bonuses };
+  }
+
+  // Check if player has reached maximum cultivation
+  static hasReachedMaxCultivation(playerCultivation) {
+    if (!playerCultivation) return false;
+    
+    const { realm, stage } = playerCultivation;
+    const realmData = this.REALMS[realm];
+    const nextRealm = this.getNextRealmInfo(realm);
+    
+    return stage === realmData.maxStage && !nextRealm;
+  }
+
+  // Get all available realms for UI
+  static getAllRealms() {
+    return Object.values(this.REALMS);
+  }
+
+  // Get realm by name
+  static getRealm(name) {
+    return this.REALMS[name];
+  }
+
+  // Calculate the benefits of next breakthrough
+  static getBreakthroughBenefits(currentRealm, currentStage) {
+    const benefits = [];
+    const realmData = this.REALMS[currentRealm];
+    
+    if (this.canAdvanceRealm({ realm: currentRealm, stage: currentStage })) {
+      const nextRealm = this.getNextRealmInfo(currentRealm);
+      if (nextRealm) {
+        benefits.push(`🌟 Advance to ${nextRealm.name} Realm`);
+        benefits.push(`❤️ +${nextRealm.healthBonus} Max Health`);
+        benefits.push(`💪 +${nextRealm.statBonus.strength} Strength`);
+        benefits.push(`🏃 +${nextRealm.statBonus.agility} Agility`);
+        benefits.push(`🧠 +${nextRealm.statBonus.intelligence} Intelligence`);
+        benefits.push(`🛡️ +${nextRealm.statBonus.vitality} Vitality`);
+        benefits.push(`⚡ +20% Cultivation Speed`);
+      }
+    } else if (this.canBreakthrough({ realm: currentRealm, stage: currentStage, qi: 0 })) {
+      benefits.push(`⚡ Advance to Stage ${currentStage + 1}`);
+      benefits.push(`🌀 +50% Max Qi`);
+      benefits.push(`🎯 +5% Cultivation Speed`);
+      benefits.push(`📈 +1 to all stats`);
+    }
+    
+    return benefits;
+  }
+
+  // Validate cultivation data
+  static validateCultivationData(cultivationData) {
+    if (!cultivationData) return false;
+    
+    const { realm, stage, qi, maxQi } = cultivationData;
+    
+    // Check if realm exists
+    if (!this.REALMS[realm]) return false;
+    
+    // Check stage bounds
+    const realmData = this.REALMS[realm];
+    if (stage < 1 || stage > realmData.maxStage) return false;
+    
+    // Check qi values
+    if (qi < 0 || maxQi < 0 || qi > maxQi) return false;
+    
+    return true;
+  }
+
+  // Get cultivation rank (for sorting/comparison)
+  static getCultivationRank(realm, stage) {
+    const realms = Object.keys(this.REALMS);
+    const realmIndex = realms.indexOf(realm);
+    
+    if (realmIndex === -1) return 0;
+    
+    // Each realm is worth 100 points, plus stages within realm
+    return (realmIndex * 100) + stage;
+  }
+
+  // Compare two cultivation levels
+  static compareCultivation(cultivationA, cultivationB) {
+    const rankA = this.getCultivationRank(cultivationA.realm, cultivationA.stage);
+    const rankB = this.getCultivationRank(cultivationB.realm, cultivationB.stage);
+    
+    if (rankA > rankB) return 1;
+    if (rankA < rankB) return -1;
+    return 0;
+  }
+}
+
+// Export utility functions
+export const cultivationUtils = {
+  // Format qi amount for display
+  formatQi: (qi) => {
+    if (qi >= 1000000) return `${(qi / 1000000).toFixed(1)}M Qi`;
+    if (qi >= 1000) return `${(qi / 1000).toFixed(1)}K Qi`;
+    return `${Math.floor(qi)} Qi`;
+  },
+
+  // Get realm color for UI
+  getRealmColor: (realm) => {
+    return CultivationEngine.REALMS[realm]?.color || 'gray';
+  },
+
+  // Calculate required cultivation sessions
+  calculateSessionsRequired: (targetQi, player, sessionLength = 10) => {
+    const speed = CultivationEngine.getCultivationSpeed(player);
+    const qiPerSession = sessionLength * speed;
+    return Math.ceil(targetQi / qiPerSession);
+  },
+
+  // Estimate time to reach target
+  estimateTimeToTarget: (targetRealm, targetStage, player) => {
+    const currentRank = CultivationEngine.getCultivationRank(player.cultivation.realm, player.cultivation.stage);
+    const targetRank = CultivationEngine.getCultivationRank(targetRealm, targetStage);
+    
+    if (targetRank <= currentRank) return "Already achieved";
+    
+    const rankDifference = targetRank - currentRank;
+    const averageQiNeeded = 1000 * rankDifference; // Rough estimate
+    const dailyQi = CultivationEngine.getCultivationSpeed(player) * 3600; // Qi per hour * 24
+    
+    const days = averageQiNeeded / dailyQi;
+    
+    if (days < 1) return "Less than a day";
+    if (days < 7) return `${Math.ceil(days)} days`;
+    if (days < 30) return `${Math.ceil(days / 7)} weeks`;
+    return `${Math.ceil(days / 30)} months`;
+  }
+};
+
+export default CultivationEngine;" lib/gameEngine/economy.js"export class EconomyEngine {
+  static calculateItemValue(item, playerLevel = 1) {
+    let value = item.baseValue || 10;
+    
+    // Scale with player level
+    value *= (1 + (playerLevel * 0.1));
+    
+    // Rarity multipliers
+    const rarityMultipliers = {
+      common: 1,
+      uncommon: 2,
+      rare: 5,
+      epic: 10,
+      legendary: 25
+    };
+    
+    value *= rarityMultipliers[item.rarity || 'common'];
+    return Math.floor(value);
+  }
+
+  static calculateTransactionPrice(basePrice, playerCharisma = 10) {
+    const charismaBonus = playerCharisma / 100; // 1% per charisma point
+    const randomFactor = 0.8 + (Math.random() * 0.4); // 0.8 to 1.2
+    return Math.floor(basePrice * randomFactor * (1 - charismaBonus));
+  }
+
+  static generateShopItems(playerLevel) {
+    const items = [
+      { id: 'healing-potion', name: 'Healing Potion', type: 'consumable', baseValue: 20 },
+      { id: 'qi-pill', name: 'Qi Restoration Pill', type: 'consumable', baseValue: 35 },
+      { id: 'spirit-stone', name: 'Spirit Stone', type: 'cultivation', baseValue: 50 },
+      { id: 'basic-technique', name: 'Basic Cultivation Manual', type: 'technique', baseValue: 100 }
+    ];
+    
+    return items.map(item => ({
+      ...item,
+      price: this.calculateItemValue(item, playerLevel),
+      quantity: Math.floor(Math.random() * 5) + 1
+    }));
+  }
+}",  lib/gameEngine/relationships.js"export class RelationshipsEngine {
+  static factions = {
+    'Righteous Sects': { alignment: 'good', relations: 50 },
+    'Demonic Cult': { alignment: 'evil', relations: -50 },
+    'Neutral Clans': { alignment: 'neutral', relations: 0 }
+  };
+
+  static calculateRelationChange(action, currentRelation, faction) {
+    let change = 0;
+    
+    switch (action.type) {
+      case 'help':
+        change = 10;
+        break;
+      case 'betray':
+        change = -20;
+        break;
+      case 'complete_quest':
+        change = 15;
+        break;
+      case 'attack_member':
+        change = -30;
+        break;
+      default:
+        change = 5;
+    }
+    
+    // Alignment modifiers
+    if (action.alignment && this.factions[faction].alignment !== action.alignment) {
+      change *= 1.5;
+    }
+    
+    return Math.max(-100, Math.min(100, currentRelation + change));
+  }
+
+  static getFactionBenefits(relationLevel) {
+    if (relationLevel >= 80) return ['Access to secret techniques', 'Discounts on items', 'Elite quests'];
+    if (relationLevel >= 50) return ['Special items', 'Better quests', 'Training grounds'];
+    if (relationLevel >= 20) return ['Basic quests', 'Shop access'];
+    if (relationLevel <= -50) return ['Hostile encounters', 'Bounty hunters'];
+    return ['Neutral status'];
+  }
+}",app/store/gameStore"import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+export const useGameStore = create(
+  persist(
+    (set, get) => ({
+      player: {
+        _id: null,
+        name: '',
+        sect: '',
+        health: 100,
+        maxHealth: 100,
+        cultivation: {
+          realm: 'Mortal',
+          stage: 1,
+          qi: 0,
+          maxQi: 100,
+          speed: 1
+        },
+        stats: {
+          strength: 10,
+          agility: 10,
+          intelligence: 10,
+          vitality: 10
+        },
+        inventory: [],
+        techniques: [],
+        location: 'starting-village',
+        gold: 50,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      world: {
+        currentTime: 0,
+        discoveredLocations: ['starting-village'],
+        activeQuests: [],
+        completedQuests: []
+      },
+      isLoading: false,
+      error: null,
+
+      // Initialize player with name and sect
+      initializePlayer: (playerData) => set({
+        player: {
+          ...get().player,
+          name: playerData.name,
+          sect: playerData.sect,
+          createdAt: playerData.startingTime
+        }
+      }),
+
+      // Cultivation actions
+      cultivate: (amount) => set(state => {
+        const newQi = Math.min(state.player.cultivation.qi + amount, state.player.cultivation.maxQi);
+        return {
+          player: {
+            ...state.player,
+            cultivation: {
+              ...state.player.cultivation,
+              qi: newQi
+            },
+            updatedAt: new Date().toISOString()
+          }
+        };
+      }),
+
+      breakthrough: () => set(state => {
+        const { realm, stage, qi } = state.player.cultivation;
+        const realms = {
+          'Mortal': { maxStage: 3, nextRealm: 'Qi Condensation' },
+          'Qi Condensation': { maxStage: 9, nextRealm: 'Foundation' },
+          'Foundation': { maxStage: 9, nextRealm: 'Golden Core' },
+          'Golden Core': { maxStage: 9, nextRealm: 'Nascent Soul' },
+          'Nascent Soul': { maxStage: 9, nextRealm: 'Immortal Emperor' },
+          'Immortal Emperor': { maxStage: 9, nextRealm: null }
+        };
+
+        const currentRealm = realms[realm];
+        const breakthroughCost = 100 * Math.pow(2, stage - 1);
+
+        if (qi >= breakthroughCost && stage < currentRealm.maxStage) {
+          // Stage advancement
+          return {
+            player: {
+              ...state.player,
+              cultivation: {
+                ...state.player.cultivation,
+                stage: stage + 1,
+                qi: qi - breakthroughCost,
+                maxQi: state.player.cultivation.maxQi * 1.5
+              },
+              updatedAt: new Date().toISOString()
+            }
+          };
+        } else if (stage === currentRealm.maxStage && currentRealm.nextRealm) {
+          // Realm advancement
+          return {
+            player: {
+              ...state.player,
+              cultivation: {
+                realm: currentRealm.nextRealm,
+                stage: 1,
+                qi: 0,
+                maxQi: state.player.cultivation.maxQi * 3,
+                speed: state.player.cultivation.speed * 1.2
+              },
+              stats: {
+                ...state.player.stats,
+                strength: state.player.stats.strength + 5,
+                agility: state.player.stats.agility + 5,
+                intelligence: state.player.stats.intelligence + 10,
+                vitality: state.player.stats.vitality + 5
+              },
+              maxHealth: state.player.maxHealth + 50,
+              updatedAt: new Date().toISOString()
+            }
+          };
+        }
+        return state;
+      }),
+
+      // Travel system
+      travelTo: (location) => set(state => ({
+        player: {
+          ...state.player,
+          location
+        }
+      })),
+
+      discoverLocation: (locationId) => set(state => ({
+        world: {
+          ...state.world,
+          discoveredLocations: state.world.discoveredLocations.includes(locationId) 
+            ? state.world.discoveredLocations 
+            : [...state.world.discoveredLocations, locationId]
+        }
+      })),
+
+      // Inventory system
+      addItem: (item) => set(state => ({
+        player: {
+          ...state.player,
+          inventory: [...state.player.inventory, { ...item, id: Date.now().toString() }],
+          updatedAt: new Date().toISOString()
+        }
+      })),
+
+      removeItem: (itemId) => set(state => ({
+        player: {
+          ...state.player,
+          inventory: state.player.inventory.filter(item => item.id !== itemId),
+          updatedAt: new Date().toISOString()
+        }
+      })),
+
+      // Gold system
+      addGold: (amount) => set(state => ({
+        player: {
+          ...state.player,
+          gold: state.player.gold + amount,
+          updatedAt: new Date().toISOString()
+        }
+      })),
+
+      removeGold: (amount) => set(state => ({
+        player: {
+          ...state.player,
+          gold: Math.max(0, state.player.gold - amount),
+          updatedAt: new Date().toISOString()
+        }
+      })),
+
+      // Quest system
+      addQuest: (quest) => set(state => ({
+        world: {
+          ...state.world,
+          activeQuests: [...state.world.activeQuests, quest]
+        }
+      })),
+
+      completeQuest: (questId) => set(state => ({
+        world: {
+          ...state.world,
+          activeQuests: state.world.activeQuests.filter(q => q.id !== questId),
+          completedQuests: [...state.world.completedQuests, questId]
+        }
+      })),
+
+      clearError: () => set({ error: null })
+    }),
+    {
+      name: 'martial-peak-game-storage',
+      partialize: (state) => ({ 
+        player: state.player,
+        world: state.world 
+      }),
+    }
+  )
+);"
