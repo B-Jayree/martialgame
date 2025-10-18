@@ -190,7 +190,7 @@ export default function Shop() {
       {/* Shopkeeper Message */}
       <div className="mt-6 p-4 bg-black/40 rounded-lg border border-amber-500/20">
         <p className="text-amber-200 text-sm italic">
-          "These treasures will aid your path to immortality, young cultivator. Choose wisely!"
+          &quot;These treasures will aid your path to immortality, young cultivator. Choose wisely!&quot;
         </p>
       </div>
     </div>
