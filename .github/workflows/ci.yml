@@ -150,18 +150,12 @@ jobs:
           IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
         run: |
-          DOCKERFILE="vagrant/dockerfiles/Dockerfile"
-          if [ -f "$DOCKERFILE" ]; then
-            docker build -f "$DOCKERFILE" \
-              -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
-              -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
-              .
-            docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-            docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
-          else
-            echo "Dockerfile not found at $DOCKERFILE. Skipping container push."
-            exit 1
-          fi
+          docker build -f vagrant/dockerfiles/Dockerfile \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
+            .
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
 
       - name: Notify Slack on image build result
         if: ${{ always() }}
@@ -209,45 +203,21 @@ jobs:
       - name: Clone Helm repo and update values
         id: helm_update
         run: |
-          set -e
-
-          if [ -z "${GITOPS_PAT}" ]; then
-            echo "GITOPS_PAT is not configured. Skipping Helm update."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          git clone "https://x-access-token:${GITOPS_PAT}@github.com/${{ github.repository_owner }}/${HELM_REPO_NAME}.git" helm-repo
+          git clone "https://${HELM_REPO_USER}:${GITOPS_PAT}@github.com/${HELM_REPO_USER}/${HELM_REPO_NAME}.git" helm-repo
           cd helm-repo
+          
+          export IMAGE_REPO="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+          yq -i '.app.image = env.IMAGE_REPO' helm/martialgame/values.yaml
+          yq -i '.app.tag = env.IMAGE_TAG' helm/martialgame/values.yaml
 
-          VALUE_FILE=""
-          if [ -f "helm/martialgame/values.yaml" ]; then
-            VALUE_FILE="helm/martialgame/values.yaml"
-          elif [ -f "helm/vprofile/values.yaml" ]; then
-            VALUE_FILE="helm/vprofile/values.yaml"
-          elif [ -f "values.yaml" ]; then
-            VALUE_FILE="values.yaml"
-          else
-            VALUE_FILE=$(find . -path '*/values.yaml' -o -path '*/values.yml' | head -n 1)
-          fi
-
-          if [ -z "${VALUE_FILE}" ]; then
-            echo "No Helm values.yaml file found in the GitOps repo. Skipping update."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          export IMAGE_TAG="${{ needs.docker-build-push.outputs.image_tag }}"
-          export ECR_REGISTRY="${{ needs.docker-build-push.outputs.ecr_registry }}"
-
-          yq -i '.app.tag = env(IMAGE_TAG)' "$VALUE_FILE"
-
+          export IMAGE_REPO="${ECR_REGISTRY}/${ECR_REPOSITORY}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+
           BRANCH_NAME="update-image-${IMAGE_TAG}"
-          git checkout -B "$BRANCH_NAME"
-          git add "$VALUE_FILE"
+          git checkout -B "${BRANCH_NAME}"
+          git add helm/martialgame/values.yaml
 
           if git diff --cached --quiet; then
             echo "No Helm values changes detected."
@@ -263,6 +233,7 @@ jobs:
         if: steps.helm_update.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITOPS_PAT }}
+          HELM_REPO_USER: ${{ secrets.HELM_REPO_USER}}
           HELM_REPO_NAME: ${{ vars.HELM_REPO_NAME }}
           IMAGE_TAG: ${{ needs.docker-build-push.outputs.image_tag }}
           GITHUB_SHA: ${{ github.sha }}
@@ -271,13 +242,13 @@ jobs:
         run: |
           BRANCH_NAME="update-image-${IMAGE_TAG}"
 
-          if gh pr list --repo "${{ github.repository_owner }}/${HELM_REPO_NAME}" --head "${BRANCH_NAME}" --json number --jq '.[].number' | grep -q .; then
+          if gh pr list --repo "${{HELM_REPO_USER}}/${HELM_REPO_NAME}" --head "${BRANCH_NAME}" --json number --jq '.[].number' | grep -q .; then
             echo "A pull request already exists for ${BRANCH_NAME}."
             exit 0
           fi
 
           gh pr create \
-            --repo "${{ github.repository_owner }}/${HELM_REPO_NAME}" \
+            --repo "${{HELM_REPO_USER}}/${HELM_REPO_NAME}" \
             --base main \
             --head "${BRANCH_NAME}" \
             --title "Update app image to ${IMAGE_TAG}" \
