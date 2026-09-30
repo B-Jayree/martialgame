@@ -1,0 +1,15 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: vagrant/dockerfiles/Dockerfile
+    image: bjayree/martialgame
+    container_name: martialgame
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${MONGODB_URI:?Set MONGODB_URI in your environment or .env file}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NEXTAUTH_SECRET in your environment or .env file}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:?Set NEXTAUTH_URL in your environment or .env file}
+    restart: unless-stopped

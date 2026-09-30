@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph AppRepo["app-repo"]
+        Dev[Developer] -->|push| Branch[Feature Branch]
+        Branch -->|PR| PR[Pull Request to main]
+        PR --> Tests[CI: Tests]
+        Tests -->|merge| Main[main]
+        Main --> Build[Build Docker Image]
+    end
+
+    subgraph Registry["Amazon ECR"]
+        ECR[(image:SHA)]
+    end
+
+    subgraph HelmRepo["helm-repo"]
+        Helm[values.yaml tag update]
+    end
+
+    subgraph InfraRepo["infra-repo"]
+        TF[Terraform: EKS]
+    end
+
+    subgraph Cluster["EKS Cluster"]
+        Argo[ArgoCD]
+        Pods[MartialGame Pods]
+    end
+
+    Build -->|push| ECR
+    Build -->|bump tag| Helm
+    Helm -->|watched| Argo
+    TF -->|provisions| Cluster
+    Argo -->|sync| Pods
+    ECR -->|pull| Pods

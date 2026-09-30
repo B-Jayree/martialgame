@@ -1,36 +1,138 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# MartialGame
 
-## Getting Started
+A containerized application deployed to AWS EKS using a GitOps workflow. This repository contains the application source code, the Dockerfile, and the CI/CD pipeline that builds and ships the image.
 
-First, run the development server:
+Part of a three-repository setup:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+| Repo | Purpose |
+|------|---------|
+| **martialgame** (this repo) | Application source, Dockerfile, CI/CD |
+| `helm-repo` | Helm chart and environment values (ArgoCD watches this) |
+| `infra-repo` | Terraform: VPC, EKS, IAM, ECR |
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Dev[Developer] -->|push| Branch[Feature Branch]
+    Branch -->|open PR| PR[Pull Request to main]
+    PR -->|run| Tests[CI: Tests / Lint / Build]
+    Tests -->|pass| Merge{Merge accepted?}
+    Merge -->|no| Branch
+    Merge -->|yes| Main[main branch]
+    Main -->|trigger| Build[Build Docker Image]
+    Build -->|push| ECR[(Amazon ECR\nimage:SHA)]
+    Build -->|update tag| Helm[helm-repo values.yaml]
+    Helm -->|commit + push| HelmGit[(helm-repo Git)]
+    HelmGit -->|watched by| Argo[ArgoCD]
+    Argo -->|sync manifests| EKS[EKS Cluster]
+    ECR -->|image pull| EKS
+    EKS --> Pods[MartialGame Pods]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Developer pushes to a feature branch and opens a PR to `main`.
+2. CI runs tests, lint, and a build check on the PR.
+3. On merge to `main`, the deploy workflow builds a Docker image tagged with the commit SHA and pushes it to Amazon ECR.
+4. The workflow updates the image tag in `helm-repo` and pushes the change.
+5. ArgoCD detects the change and syncs the cluster.
+6. New pods roll out pulling the updated image from ECR.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Running Locally
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Without Docker
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Install dependencies and run the app in development mode. The app listens on port `8080` by default.
 
-## Deploy on Vercel
+### With Docker
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Build the image locally and run it in a container, mapping the container port to a local port. Open the app in your browser at the mapped address.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Project Structure
+
+```
+martialgame/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # build + push + helm tag update
+├── Dockerfile
+├── <source files>
+└── README.md
+```
+
+---
+
+## CI/CD Pipeline
+
+Defined in `.github/workflows/deploy.yml`.
+
+**Trigger:** push to `main` (i.e. a merged PR)
+
+**Steps:**
+
+1. Check out source
+2. Assume IAM role via OIDC
+3. Log in to Amazon ECR
+4. Build image tagged with the commit SHA
+5. Push image to ECR
+6. Check out `helm-repo` using a scoped PAT
+7. Update the image tag in the environment values file
+8. Commit and push to `helm-repo`
+
+**Required secrets:**
+
+| Secret | Purpose |
+|--------|---------|
+| `HELM_REPO_PAT` | Push access to `helm-repo` |
+
+AWS credentials are not stored — the workflow assumes a role via OIDC.
+
+---
+
+## Image Tagging
+
+Images are tagged with the Git commit SHA. Tags are immutable — one tag per commit. This lets ArgoCD detect changes reliably; a `latest` tag would break GitOps sync.
+
+---
+
+## Deployment
+
+Deployments are handled entirely through Git:
+
+- **Merging to `main`** triggers a build and pushes an updated tag to `helm-repo`.
+- **ArgoCD** syncs the cluster to match `helm-repo` automatically.
+
+To roll back, revert the tag commit in `helm-repo`.
+
+---
+
+## Related Repos
+
+- **`helm-repo`** — Helm chart and per-environment values
+- **`infra-repo`** — Terraform for AWS infrastructure
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `ImagePullBackOff` | Node IAM missing ECR read perms | Attach ECR read policy / configure IRSA |
+| CI checkout of `helm-repo` fails | PAT expired or missing scope | Regenerate PAT, update `HELM_REPO_PAT` |
+| ECR login fails in CI | OIDC role trust misconfigured | Verify OIDC provider and role trust |
+| Docker build fails | Missing dependency or base image issue | Check Dockerfile and lockfile |
+
+---
+
+## License
+
+This project is licensed under the MIT License.

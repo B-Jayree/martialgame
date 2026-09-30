@@ -1,0 +1,289 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build-and-sonar:
+    name: Build, lint, SonarQube scan and quality gate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      HELM_REPO_NAME: ${{ vars.HELM_REPO_NAME }}
+      GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint project
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
+      - name: SonarQube quality gate check
+        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+        timeout-minutes: 5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
+      - name: Notify Slack on pull request
+        if: ${{ always() }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          if [ -z "${SLACK_WEBHOOK:-}" ]; then
+            echo "SLACK_WEBHOOK is not configured. Skipping Slack notification."
+            exit 0
+          fi
+
+          STATUS="✅"
+          STATE="passed"
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="❌"
+            STATE="failed"
+          fi
+
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+
+          curl -X POST -H 'Content-type: application/json' --data @- "$SLACK_WEBHOOK" <<EOF
+          {
+            "text": "*Martial Game App PR validation ${STATE}*\nPR: #${PR_NUMBER} - ${PR_TITLE}\nURL: ${PR_URL}\nRepository: ${{ github.repository }}\nBranch: ${BRANCH_NAME}\nStatus: ${STATUS}"
+          }
+          EOF
+
+  docker-build-push:
+    name: Build and push Docker image to ECR
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+      ecr_registry: ${{ steps.meta.outputs.ecr_registry }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image metadata
+        id: meta
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          IMAGE_TAG="${GITHUB_SHA::7}"
+          echo "ecr_registry=${ECR_REGISTRY}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.meta.outputs.ecr_registry }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+        run: |
+          if [ -f Dockerfile ] || [ -f Docker-files/app/multistage/Dockerfile ]; then
+            docker build \
+              -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
+              -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
+              .
+            docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+            docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+          else
+            echo "No Dockerfile found in the repository. Skipping container push."
+          fi
+
+      - name: Notify Slack on image build result
+        if: ${{ always() }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          if [ -z "${SLACK_WEBHOOK:-}" ]; then
+            echo "SLACK_WEBHOOK is not configured. Skipping Slack notification."
+            exit 0
+          fi
+
+          STATUS="✅"
+          STATE="completed"
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="❌"
+            STATE="failed"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' --data @- "$SLACK_WEBHOOK" <<EOF
+          {
+            "text": "*Martial Game App image build ${STATE}*\nRepository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nImage tag: ${{ steps.meta.outputs.image_tag }}\nStatus: ${STATUS}"
+          }
+          EOF
+
+  update-helm:
+    name: Update Helm values in GitOps repo
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      HELM_REPO_NAME: ${{ vars.HELM_REPO_NAME }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+    steps:
+      - name: Install yq
+        uses: mikefarah/yq@v4
+
+      - name: Clone Helm repo and update values
+        id: helm_update
+        run: |
+          set -e
+
+          if [ -z "${GITOPS_PAT}" ]; then
+            echo "GITOPS_PAT is not configured. Skipping Helm update."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git clone "https://x-access-token:${GITOPS_PAT}@github.com/${{ github.repository_owner }}/${HELM_REPO_NAME}.git" helm-repo
+          cd helm-repo
+
+          VALUE_FILE=""
+          if [ -f "helm/vprofile/values.yaml" ]; then
+            VALUE_FILE="helm/vprofile/values.yaml"
+          elif [ -f "values.yaml" ]; then
+            VALUE_FILE="values.yaml"
+          else
+            echo "No Helm values.yaml file found in the GitOps repo. Skipping update."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          export IMAGE_REPO="${{ needs.docker-build-push.outputs.ecr_registry }}/${ECR_REPOSITORY}"
+          export IMAGE_TAG="${{ needs.docker-build-push.outputs.image_tag }}"
+
+          yq -i '.app.image = env(IMAGE_REPO)' "$VALUE_FILE"
+          yq -i '.app.tag = env(IMAGE_TAG)' "$VALUE_FILE"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          BRANCH_NAME="update-image-${IMAGE_TAG}"
+          git checkout -B "$BRANCH_NAME"
+          git add "$VALUE_FILE"
+
+          if git diff --cached --quiet; then
+            echo "No Helm values changes detected."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "Update app image for ${IMAGE_TAG}"
+          git push origin "HEAD:${BRANCH_NAME}"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR for Helm review
+        if: steps.helm_update.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITOPS_PAT }}
+          HELM_REPO_NAME: ${{ vars.HELM_REPO_NAME }}
+          IMAGE_TAG: ${{ needs.docker-build-push.outputs.image_tag }}
+          GITHUB_SHA: ${{ github.sha }}
+          ECR_REGISTRY: ${{ needs.docker-build-push.outputs.ecr_registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+        run: |
+          BRANCH_NAME="update-image-${IMAGE_TAG}"
+
+          if gh pr list --repo "${{ github.repository_owner }}/${HELM_REPO_NAME}" --head "${BRANCH_NAME}" --json number --jq '.[].number' | grep -q .; then
+            echo "A pull request already exists for ${BRANCH_NAME}."
+            exit 0
+          fi
+
+          gh pr create \
+            --repo "${{ github.repository_owner }}/${HELM_REPO_NAME}" \
+            --base main \
+            --head "${BRANCH_NAME}" \
+            --title "Update app image to ${IMAGE_TAG}" \
+            --body "Automated image update for deployment review.\n\n- Registry: ${ECR_REGISTRY}\n- Repository: ${ECR_REPOSITORY}\n- Image tag: ${IMAGE_TAG}\n- Source commit: ${GITHUB_SHA}\n\nThis PR requires approval before merge."
+
+      - name: Notify Slack on Helm PR update
+        if: ${{ always() }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          if [ -z "${SLACK_WEBHOOK:-}" ]; then
+            echo "SLACK_WEBHOOK is not configured. Skipping Slack notification."
+            exit 0
+          fi
+
+          STATUS="✅"
+          STATE="created"
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="❌"
+            STATE="failed"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' --data @- "$SLACK_WEBHOOK" <<EOF
+          {
+            "text": "*Martial Game App Helm update ${STATE}*\nRepository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nImage tag: ${{ needs.docker-build-push.outputs.image_tag }}\nStatus: ${STATUS}"
+          }
+          EOF
