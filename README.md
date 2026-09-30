@@ -71,7 +71,7 @@ martialgame/
 
 ---
 
-## CI/CD Pipeline
+### CI/CD Pipeline
 
 Defined in `.github/workflows/deploy.yml`.
 
