@@ -7,8 +7,8 @@ Part of a three-repository setup:
 | Repo | Purpose |
 |------|---------|
 | **martialgame** (this repo) | Application source, Dockerfile, CI/CD |
-| `helm-repo` | Helm chart and environment values (ArgoCD watches this) |
-| `infra-repo` | Terraform: VPC, EKS, IAM, ECR |
+| `martialgame-helm` | Helm chart and environment values (ArgoCD watches this) |
+| `martialgame-infra` | Terraform: VPC, EKS, IAM, ECR |
 
 ---
 

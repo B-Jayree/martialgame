@@ -139,6 +139,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.meta.outputs.ecr_registry }}
           IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
         run: |
           if [ -f Dockerfile ] || [ -f Docker-files/app/multistage/Dockerfile ]; then
             docker build \
@@ -183,6 +184,7 @@ jobs:
       contents: write
       pull-requests: write
     env:
+      HELM_REPO_USER: ${{ secrets.HELM_REPO_USER }}
       HELM_REPO_NAME: ${{ vars.HELM_REPO_NAME }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
       GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
@@ -218,10 +220,8 @@ jobs:
             exit 0
           fi
 
-          export IMAGE_REPO="${{ needs.docker-build-push.outputs.ecr_registry }}/${ECR_REPOSITORY}"
           export IMAGE_TAG="${{ needs.docker-build-push.outputs.image_tag }}"
 
-          yq -i '.app.image = env(IMAGE_REPO)' "$VALUE_FILE"
           yq -i '.app.tag = env(IMAGE_TAG)' "$VALUE_FILE"
 
           git config user.name "github-actions[bot]"
