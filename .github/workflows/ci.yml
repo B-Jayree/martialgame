@@ -232,8 +232,10 @@ jobs:
           fi
 
           export IMAGE_TAG="${{ needs.docker-build-push.outputs.image_tag }}"
+          export ECR_REGISTRY="${{ needs.docker-build-push.outputs.ecr_registry }}"
+          export ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}"
 
-          yq -i '.app.image = "bjayree/martialgame"' "$VALUE_FILE"
+          yq -i '.app.image = env(ECR_IMAGE)' "$VALUE_FILE"
           yq -i '.app.tag = env(IMAGE_TAG)' "$VALUE_FILE"
 
           git config user.name "github-actions[bot]"
