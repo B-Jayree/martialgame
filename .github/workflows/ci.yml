@@ -130,10 +130,13 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set image metadata
         id: meta
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
@@ -147,15 +150,17 @@ jobs:
           IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
         run: |
-          if [ -f Dockerfile ] || [ -f Docker-files/app/multistage/Dockerfile ]; then
-            docker build \
+          DOCKERFILE="vagrant/dockerfiles/Dockerfile"
+          if [ -f "$DOCKERFILE" ]; then
+            docker build -f "$DOCKERFILE" \
               -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
               -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
               .
             docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
             docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
           else
-            echo "No Dockerfile found in the repository. Skipping container push."
+            echo "Dockerfile not found at $DOCKERFILE. Skipping container push."
+            exit 1
           fi
 
       - name: Notify Slack on image build result
