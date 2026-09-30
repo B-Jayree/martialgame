@@ -55,29 +55,6 @@ export default function CultivationPanel() {
     setCultivationLog(prev => [newLog, ...prev.slice(0, 14)]); // Keep last 15 messages
   }, []);
 
-  // Safe cultivation with error handling
-  const handleCultivate = useCallback(() => {
-    try {
-      const actualAmount = cultivationAmount * cultivationSpeed;
-      
-      if (actualAmount <= 0) {
-        addToLog('❌ Invalid cultivation amount', 'error');
-        return;
-      }
-      
-      cultivate(actualAmount);
-      addToLog(`🧘 Cultivated ${Math.floor(actualAmount)} Qi`, 'cultivation');
-      
-      // Check for automatic breakthrough with fresh state
-      if (autoBreakthrough && CultivationEngine.canBreakthrough(useGameStore.getState().player.cultivation)) {
-        handleBreakthrough();
-      }
-    } catch (error) {
-      console.error('Cultivation error:', error);
-      addToLog(`❌ Cultivation failed: ${error.message}`, 'error');
-    }
-  }, [cultivate, cultivationAmount, cultivationSpeed, autoBreakthrough, addToLog]);
-
   // Safe breakthrough with error handling
   const handleBreakthrough = useCallback(() => {
     try {
@@ -104,6 +81,29 @@ export default function CultivationPanel() {
       addToLog(`❌ Breakthrough failed: ${error.message}`, 'error');
     }
   }, [breakthrough, nextRealm, player.cultivation.realm, addToLog]);
+
+  // Safe cultivation with error handling
+  const handleCultivate = useCallback(() => {
+    try {
+      const actualAmount = cultivationAmount * cultivationSpeed;
+      
+      if (actualAmount <= 0) {
+        addToLog('❌ Invalid cultivation amount', 'error');
+        return;
+      }
+      
+      cultivate(actualAmount);
+      addToLog(`🧘 Cultivated ${Math.floor(actualAmount)} Qi`, 'cultivation');
+      
+      // Check for automatic breakthrough with fresh state
+      if (autoBreakthrough && CultivationEngine.canBreakthrough(useGameStore.getState().player.cultivation)) {
+        handleBreakthrough();
+      }
+    } catch (error) {
+      console.error('Cultivation error:', error);
+      addToLog(`❌ Cultivation failed: ${error.message}`, 'error');
+    }
+  }, [cultivate, cultivationAmount, cultivationSpeed, autoBreakthrough, addToLog, handleBreakthrough]);
 
   // Continuous cultivation with proper state management
   const startContinuousCultivation = useCallback(() => {
