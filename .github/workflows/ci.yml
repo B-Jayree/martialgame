@@ -222,6 +222,7 @@ jobs:
 
           export IMAGE_TAG="${{ needs.docker-build-push.outputs.image_tag }}"
 
+          yq -i '.app.image = "bjayree/martialgame"' "$VALUE_FILE"
           yq -i '.app.tag = env(IMAGE_TAG)' "$VALUE_FILE"
 
           git config user.name "github-actions[bot]"
