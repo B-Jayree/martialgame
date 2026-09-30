@@ -221,11 +221,17 @@ jobs:
           cd helm-repo
 
           VALUE_FILE=""
-          if [ -f "helm/vprofile/values.yaml" ]; then
+          if [ -f "helm/martialgame/values.yaml" ]; then
+            VALUE_FILE="helm/martialgame/values.yaml"
+          elif [ -f "helm/vprofile/values.yaml" ]; then
             VALUE_FILE="helm/vprofile/values.yaml"
           elif [ -f "values.yaml" ]; then
             VALUE_FILE="values.yaml"
           else
+            VALUE_FILE=$(find . -path '*/values.yaml' -o -path '*/values.yml' | head -n 1)
+          fi
+
+          if [ -z "${VALUE_FILE}" ]; then
             echo "No Helm values.yaml file found in the GitOps repo. Skipping update."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -233,9 +239,7 @@ jobs:
 
           export IMAGE_TAG="${{ needs.docker-build-push.outputs.image_tag }}"
           export ECR_REGISTRY="${{ needs.docker-build-push.outputs.ecr_registry }}"
-          export ECR_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}"
 
-          yq -i '.app.image = env(ECR_IMAGE)' "$VALUE_FILE"
           yq -i '.app.tag = env(IMAGE_TAG)' "$VALUE_FILE"
 
           git config user.name "github-actions[bot]"
