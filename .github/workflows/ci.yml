@@ -26,6 +26,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
       HELM_REPO_NAME: ${{ vars.HELM_REPO_NAME }}
+      HELM_REPO_USER: ${{ secrets.HELM_REPO_USER }}
       GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
       SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -202,22 +203,36 @@ jobs:
 
       - name: Clone Helm repo and update values
         id: helm_update
+        env:
+          IMAGE_TAG: ${{ needs.docker-build-push.outputs.image_tag }}
+          ECR_REGISTRY: ${{ needs.docker-build-push.outputs.ecr_registry }}
         run: |
+          set -e
+
+          if [ -z "${GITOPS_PAT}" ] || [ -z "${HELM_REPO_USER}" ] || [ -z "${HELM_REPO_NAME}" ]; then
+            echo "Required Helm repo variables are missing. Skipping Helm update."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           git clone "https://${HELM_REPO_USER}:${GITOPS_PAT}@github.com/${HELM_REPO_USER}/${HELM_REPO_NAME}.git" helm-repo
           cd helm-repo
-          
-          export IMAGE_REPO="${ECR_REGISTRY}/${ECR_REPOSITORY}"
-          yq -i '.app.image = env.IMAGE_REPO' helm/martialgame/values.yaml
-          yq -i '.app.tag = env.IMAGE_TAG' helm/martialgame/values.yaml
 
-          export IMAGE_REPO="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+          VALUE_FILE="helm/martialgame/values.yaml"
+          if [ ! -f "${VALUE_FILE}" ]; then
+            echo "Helm values file not found: ${VALUE_FILE}"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          yq -i '.app.tag = env(IMAGE_TAG)' "${VALUE_FILE}"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-
           BRANCH_NAME="update-image-${IMAGE_TAG}"
           git checkout -B "${BRANCH_NAME}"
-          git add helm/martialgame/values.yaml
+          git add "${VALUE_FILE}"
 
           if git diff --cached --quiet; then
             echo "No Helm values changes detected."
@@ -225,7 +240,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update app image for ${IMAGE_TAG}"
+          git commit -m "Update app image tag to ${IMAGE_TAG}"
           git push origin "HEAD:${BRANCH_NAME}"
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
@@ -233,7 +248,7 @@ jobs:
         if: steps.helm_update.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITOPS_PAT }}
-          HELM_REPO_USER: ${{ secrets.HELM_REPO_USER}}
+          HELM_REPO_USER: ${{ secrets.HELM_REPO_USER }}
           HELM_REPO_NAME: ${{ vars.HELM_REPO_NAME }}
           IMAGE_TAG: ${{ needs.docker-build-push.outputs.image_tag }}
           GITHUB_SHA: ${{ github.sha }}
@@ -242,13 +257,13 @@ jobs:
         run: |
           BRANCH_NAME="update-image-${IMAGE_TAG}"
 
-          if gh pr list --repo "${{HELM_REPO_USER}}/${HELM_REPO_NAME}" --head "${BRANCH_NAME}" --json number --jq '.[].number' | grep -q .; then
+          if gh pr list --repo "${HELM_REPO_USER}/${HELM_REPO_NAME}" --head "${BRANCH_NAME}" --json number --jq '.[].number' | grep -q .; then
             echo "A pull request already exists for ${BRANCH_NAME}."
             exit 0
           fi
 
           gh pr create \
-            --repo "${{HELM_REPO_USER}}/${HELM_REPO_NAME}" \
+            --repo "${HELM_REPO_USER}/${HELM_REPO_NAME}" \
             --base main \
             --head "${BRANCH_NAME}" \
             --title "Update app image to ${IMAGE_TAG}" \
