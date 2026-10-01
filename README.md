@@ -1,4 +1,4 @@
-# MartialGame
+## MartialGame
 
 A containerized application deployed to AWS EKS using a GitOps workflow. This repository contains the application source code, the Dockerfile, and the CI/CD pipeline that builds and ships the image.
 
