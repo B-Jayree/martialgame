@@ -12,7 +12,7 @@ Part of a three-repository setup:
 
 ---
 
-## Architecture
+### Architecture
 
 ```mermaid
 flowchart TD
